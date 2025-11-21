@@ -150,9 +150,32 @@
 - [ ] Click "Clear History" → Confirmation dialog
 - [ ] Confirm clear → History empties, stats reset to 0
 
+### 16. Daily Goal Feature
+- [ ] Open Options page
+- [ ] Daily Goal section visible with input field
+- [ ] Set goal to 500 words → Click "Save Goal"
+- [ ] Success toast shows goal amount
+- [ ] Progress section appears showing "0 / 500 words"
+- [ ] Progress bar shows 0% filled
+- [ ] Open Google Doc → Widget loads
+- [ ] Daily goal progress visible in widget (between sprint progress and duration buttons)
+- [ ] Shows "0 / 500" and progress bar
+- [ ] Complete sprint with 100 words written
+- [ ] Daily goal updates to "100 / 500" (20% progress bar)
+- [ ] Complete second sprint with 200 words
+- [ ] Daily goal updates to "300 / 500" (60% progress bar)
+- [ ] Complete third sprint with 200+ words
+- [ ] Goal celebration appears: "🎯 Daily Goal Reached!"
+- [ ] Daily goal shows "500 / 500" (100% progress bar)
+- [ ] Shows "✓ Goal reached!" message
+- [ ] Complete another sprint → No second celebration
+- [ ] Open Options → Progress reflects all sprints completed today
+- [ ] Set goal to 0 → Daily goal disappears from widget
+- [ ] Set goal to 1000 → Daily goal reappears with current progress
+
 ## Cross-Document & Sync Tests
 
-### 16. Multiple Documents
+### 17. Multiple Documents
 - [ ] Complete sprint in Document A
 - [ ] Open different Document B
 - [ ] Widget appears with same theme/settings
@@ -161,7 +184,7 @@
 - [ ] Complete sprint in Document B
 - [ ] History shows both sprints with correct doc names
 
-### 17. Chrome Sync
+### 18. Chrome Sync
 - [ ] Complete sprints and change settings
 - [ ] Open Chrome on different device (if available) or profile
 - [ ] Install extension (same sync account)
@@ -171,21 +194,21 @@
 
 ## Edge Cases & Error Handling
 
-### 18. Word Count Issues
+### 19. Word Count Issues
 - [ ] Disable word count: Tools → Word count → Uncheck display
 - [ ] Start sprint
 - [ ] Warning appears: "⚠️ Word count hidden!"
 - [ ] Re-enable word count
 - [ ] Warning disappears
 
-### 19. Custom Duration Edge Cases
+### 20. Custom Duration Edge Cases
 - [ ] Click "Custom"
 - [ ] Enter "0" → Click "Set" → Alert: "Please enter valid number"
 - [ ] Enter "200" → Click "Set" → Clamped to 180 minutes (03:00:00)
 - [ ] Enter "abc" → Click "Set" → Alert shown
 - [ ] Enter "15.5" → Input auto-removes decimal (becomes "155")
 
-### 20. Empty Document
+### 21. Empty Document
 - [ ] Open completely empty document (0 words)
 - [ ] Widget shows "0 words"
 - [ ] Start sprint with 0 words
@@ -193,12 +216,12 @@
 - [ ] Counter shows "+10 added"
 - [ ] Complete sprint → WPM calculates correctly
 
-### 21. Very Long Sprint
+### 22. Very Long Sprint
 - [ ] Set custom duration: 180 minutes
 - [ ] Start sprint → Timer shows 03:00:00
 - [ ] Timer counts down properly in HH:MM:SS format
 
-### 22. Pause Time Tracking
+### 23. Pause Time Tracking
 - [ ] Start 5-minute sprint
 - [ ] Wait 1 minute (04:00 remaining)
 - [ ] Pause for 30 seconds (real time)
@@ -208,13 +231,13 @@
 
 ## Performance Tests
 
-### 23. Large Document
+### 24. Large Document
 - [ ] Open document with 5000+ words
 - [ ] Widget displays correct word count
 - [ ] Start sprint → No lag or freezing
 - [ ] Word count updates smoothly while typing
 
-### 24. Long Usage Session
+### 25. Long Usage Session
 - [ ] Complete 10 sprints in succession
 - [ ] Check memory usage in Task Manager
 - [ ] No memory leaks or excessive CPU usage
@@ -222,7 +245,7 @@
 
 ## Browser Compatibility
 
-### 25. Chrome/Chromium Browsers
+### 26. Chrome/Chromium Browsers
 - [ ] Test in Chrome
 - [ ] Test in Edge (Chromium-based)
 - [ ] Test in Brave (if available)
@@ -230,19 +253,19 @@
 
 ## Final Checks
 
-### 26. Console Errors
+### 27. Console Errors
 - [ ] Open DevTools console on Google Doc
 - [ ] Complete full sprint workflow
 - [ ] No JavaScript errors in console
 - [ ] Only expected SprintWrite logs appear
 
-### 27. Extension Permissions
+### 28. Extension Permissions
 - [ ] Extension only requests:
   - [ ] `storage` permission
   - [ ] `https://docs.google.com/*` host permission
 - [ ] No unexpected permission requests
 
-### 28. Privacy Verification
+### 29. Privacy Verification
 - [ ] Open Network tab in DevTools
 - [ ] Complete sprints and use features
 - [ ] No external network requests (except Ko-fi links when clicked)

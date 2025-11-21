@@ -10,6 +10,7 @@ A completely **FREE** Chrome extension that helps writers stay productive with t
 ### Core Functionality
 - ⏱️ **Timed Writing Sprints** - Set sprints for 15, 20, 30 minutes, or custom duration
 - 📝 **Real-time Word Tracking** - See current word count, words added during sprint, and WPM
+- 🎯 **Daily Writing Goal** - Set a daily word count target and track your progress
 - 📊 **Sprint Statistics** - Track performance across all your Google Docs
 - 📜 **Global History** - View your last 50 sprints with document names, dates, and stats
 - 📥 **Export Data** - Download your complete sprint history as CSV
@@ -79,6 +80,22 @@ A completely **FREE** Chrome extension that helps writers stay productive with t
 - Click menu (⋮) → "Export Data"
 - Downloads CSV file with complete sprint history
 - Includes: date, document title, duration, words written, WPM
+
+### Setting a Daily Goal
+
+1. **Open Options** - Right-click extension icon → "Options" or click gear icon in popup
+2. **Set Your Goal** - Enter your daily word count target (e.g., 1000)
+3. **Track Progress** - View real-time progress in both:
+   - Widget (small progress bar between sprint timer and duration buttons)
+   - Options page (detailed progress with sprint count)
+4. **Reach Your Goal** - Get a special celebration when you hit your target!
+5. **Start Fresh** - Progress resets automatically at midnight
+
+**Tips:**
+- Set to 0 to disable the daily goal
+- Goal tracks all words written across all sprints today
+- Progress persists across different Google Docs
+- Celebration shows only once per day when goal is first reached
 
 ## File Structure
 
