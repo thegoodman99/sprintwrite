@@ -1008,23 +1008,35 @@
       }
 
       const stats = calculateStats(filteredHist);
-      const periodName = currentPeriod === 'all' ? 'All Time' : 
+      const periodName = currentPeriod === 'all' ? 'All Time' :
                         currentPeriod === 'month' ? 'Past 30 Days' :
                         currentPeriod === 'week' ? 'Past 7 Days' : 'Today';
-      
-      const statsText = `⚡ SprintWrite – Writing Sprint Timer
+
+      // Get daily goal progress if available
+      const settings = await Storage.getSettings();
+      const dailyGoal = settings.dailyGoal || 0;
+      let goalSection = '';
+
+      if (dailyGoal > 0) {
+        const progress = await Storage.getTodayProgress();
+        const percentage = Math.min(100, Math.round((progress.wordsWritten / dailyGoal) * 100));
+        goalSection = `
+Daily Goal Progress: ${progress.wordsWritten.toLocaleString()} / ${dailyGoal.toLocaleString()} words (${percentage}%)
+`;
+      }
+
+      const statsText = `SprintWrite – Writing Sprint Timer
 ${periodName} Statistics
 
-✍️ Total Sprints: ${stats.totalSprints}
-⏱️ Minutes Written: ${stats.totalMinutes}
-📝 Words Written: ${stats.totalWords.toLocaleString()}
-⚡ Avg Words/Min: ${stats.avgWPM}
-
-Keep writing! 🚀
+Total Sprints: ${stats.totalSprints}
+Minutes Written: ${stats.totalMinutes}
+Words Written: ${stats.totalWords.toLocaleString()}
+Avg Words/Min: ${stats.avgWPM}${goalSection}
+Keep writing!
 
 Track YOUR writing sprints FREE:
 Chrome Extension: chrome.google.com/webstore (search "SprintWrite")
-Support: ko-fi.com/thegoodman99`;
+Created by: ko-fi.com/thegoodman99`;
 
       navigator.clipboard.writeText(statsText).then(() => {
         // Show feedback
