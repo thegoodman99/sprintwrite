@@ -234,6 +234,7 @@
           <div class="sw-menu" id="sw-menu" role="button" aria-label="Menu" tabindex="0">⋮</div>
           <div class="sw-menu-panel" id="sw-menu-panel" role="menu">
             <a href="#" id="sw-toggle-compact" role="menuitem">📍 ${state.compactMode ? 'Float Mode' : 'Toolbar Mode'}</a>
+            <a href="#" id="sw-open-options" role="menuitem">⚙️ Options & Goal</a>
             <a href="#" id="sw-view-history" role="menuitem">📜 View History</a>
             <a href="#" id="sw-view-stats" role="menuitem">📊 Statistics</a>
             <a href="#" id="sw-export-data" role="menuitem">📥 Export Data</a>
@@ -370,6 +371,15 @@
         }
         const csv = Util.toCsv(hist);
         Util.download('sprintwrite_history.csv', csv);
+      };
+    }
+
+    // Open options page
+    const optionsBtn = root.querySelector('#sw-open-options');
+    if (optionsBtn) {
+      optionsBtn.onclick = (e) => {
+        e.preventDefault();
+        chrome.runtime.sendMessage({action: 'OPEN_OPTIONS'});
       };
     }
 
