@@ -89,17 +89,32 @@
     const revisionButton = document.querySelector('#docs-revisions-appbarbutton');
     if (revisionButton) {
       const rect = revisionButton.getBoundingClientRect();
-      const rightOffset = window.innerWidth - rect.left + 8; // 8px gap
-      root.style.right = rightOffset + 'px';
-      root.style.top = '8px';
-      console.log('SprintWrite: Positioned in toolbar mode');
+
+      // Check if button is actually positioned (not still loading)
+      // If rect.left is very small, button hasn't been positioned yet by Google Docs
+      if (rect.left > 100 && rect.left < window.innerWidth - 100) {
+        // Calculate distance from right edge: total width - button position + gap
+        const rightOffset = window.innerWidth - rect.left + 8; // 8px gap to the left of button
+        root.style.right = rightOffset + 'px';
+        root.style.top = '8px';
+        console.log('SprintWrite: Positioned in toolbar mode at', rightOffset + 'px from right');
+      } else if (retries < 20) {
+        // Button found but not properly positioned yet, retry
+        setTimeout(() => positionToolbarMode(root, retries + 1), 250);
+        console.log('SprintWrite: Button found but not positioned yet... (attempt', retries + 1, ')');
+      } else {
+        // Use fallback after too many retries
+        root.style.right = '80px';
+        root.style.top = '8px';
+        console.log('SprintWrite: Using fallback toolbar position');
+      }
     } else if (retries < 20) {
       // Element not ready yet, retry after a short delay
       setTimeout(() => positionToolbarMode(root, retries + 1), 250);
       console.log('SprintWrite: Waiting for Google Docs toolbar... (attempt', retries + 1, ')');
     } else {
       // Fallback position if element never loads
-      root.style.right = '240px';
+      root.style.right = '80px';
       root.style.top = '8px';
       console.log('SprintWrite: Using fallback toolbar position');
     }
