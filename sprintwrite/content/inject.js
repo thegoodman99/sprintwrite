@@ -607,24 +607,39 @@
           }, 1500);
         }
         
-        // Wait a moment for word count to become visible, then start
+        // Wait a moment for word count to become visible, then show countdown
         setTimeout(() => {
           state.wordsAtSprintStart = Util.countWordsHeuristic();
           state.wordsNow = state.wordsAtSprintStart;
           state.wordsPerMinute = 0;
-          
-          console.log('SprintWrite: Sprint starting with', state.wordsAtSprintStart, 'words');
-          
-          state.running = true;
-          state.paused = false;
-          state.totalPausedTime = 0;
-          state.startEpoch = Date.now()/1000;
-          state.endEpoch = state.startEpoch + state.durationSec;
 
-          root.innerHTML = render(state);
-          bindUI(root, state);
-          startTicking();
-          window.addEventListener('beforeunload', confirmUnload);
+          console.log('SprintWrite: Sprint starting with', state.wordsAtSprintStart, 'words');
+
+          // Show countdown before starting timer
+          const timeDisplay = root.querySelector('#sw-time');
+          if (timeDisplay) {
+            // Countdown: 3, 2, 1
+            timeDisplay.textContent = 'Starting in 3';
+            setTimeout(() => {
+              timeDisplay.textContent = 'Starting in 2';
+              setTimeout(() => {
+                timeDisplay.textContent = 'Starting in 1';
+                setTimeout(() => {
+                  // Now actually start the timer
+                  state.running = true;
+                  state.paused = false;
+                  state.totalPausedTime = 0;
+                  state.startEpoch = Date.now()/1000;
+                  state.endEpoch = state.startEpoch + state.durationSec;
+
+                  root.innerHTML = render(state);
+                  bindUI(root, state);
+                  startTicking();
+                  window.addEventListener('beforeunload', confirmUnload);
+                }, 500);
+              }, 500);
+            }, 500);
+          }
         }, 1200); // Wait 1.2 seconds for word count to appear
       };
     }
@@ -1326,7 +1341,44 @@ Created by: ko-fi.com/thegoodman99`;
       updateWordsUI(currentWords);
     }
   }, 2000);
-  
+
+  // Listen for real-time settings changes from options page
+  chrome.storage.onChanged.addListener(async (changes, areaName) => {
+    if (areaName !== 'sync') return;
+
+    // Update settings in real-time
+    if (changes.settings) {
+      const newSettings = changes.settings.newValue;
+
+      // Update theme
+      if (newSettings.theme !== state.theme) {
+        state.theme = newSettings.theme;
+        applyThemeClass(root, state.theme);
+      }
+
+      // Update sound
+      if (newSettings.sound !== state.sound) {
+        state.sound = newSettings.sound;
+      }
+
+      // Update celebration
+      if (newSettings.celebration !== state.celebration) {
+        state.celebration = newSettings.celebration;
+      }
+
+      // Update daily goal
+      if (newSettings.dailyGoal !== state.dailyGoal) {
+        state.dailyGoal = newSettings.dailyGoal;
+        // Refresh today's progress
+        const progress = await Storage.getTodayProgress();
+        state.todayWordsWritten = progress.wordsWritten;
+        // Re-render to show updated goal
+        root.innerHTML = render(state);
+        bindUI(root, state);
+      }
+    }
+  });
+
   // Cleanup on page unload
   window.addEventListener('unload', () => {
     clearInterval(wordCountInterval);
