@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SprintWrite</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header>
+      <h1>⚡ SprintWrite</h1>
+    </header>
+    
+    <div class="quick-stats">
+      <div class="stat">
+        <div class="stat-value" id="total-sprints">0</div>
+        <div class="stat-label">Sprints</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="total-words">0</div>
+        <div class="stat-label">Words Written</div>
+      </div>
+    </div>
+    
+    <div class="info-text">
+      <p id="status-text">Open a Google Doc to start writing!</p>
+    </div>
+    
+    <div class="actions">
+      <button id="open-options" class="btn btn-primary">⚙️ Open Options</button>
+      <button id="open-docs" class="btn btn-secondary">📝 New Google Doc</button>
+    </div>
+    
+    <footer>
+      <div class="links">
+        <a href="#" id="help-link">☕ Support</a>
+      </div>
+    </footer>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

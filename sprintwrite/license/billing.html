@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>SprintWrite – License & Billing</title>
+  <link rel="stylesheet" href="../common/themes.css">
+  <style>
+    body { font-family: var(--sw-font); background: var(--sw-bg); color: var(--sw-fg); margin: 24px; }
+    .card { max-width: 640px; border: 1px solid var(--sw-border); background: var(--sw-panel); padding: 16px; border-radius: 12px; }
+    input, button { font: inherit; padding: 8px 10px; border: 1px solid var(--sw-border); border-radius: 10px; }
+    button.primary { background: var(--sw-accent); color: white; border-color: var(--sw-accent); }
+    .row { display: flex; gap: 8px; align-items: center; }
+    .hint { color: var(--sw-muted); font-size: 13px; }
+    .grid { display: grid; gap: 12px; }
+  </style>
+</head>
+<body>
+  <h1>License & Billing</h1>
+  <div class="card grid">
+    <div>
+      <strong>Plans</strong>
+      <div class="hint">FREE: 20/35 min. PRO: custom sprints, history, XP, extra themes.</div>
+      <ul>
+        <li><strong>$1 / month</strong> (subscription)</li>
+        <li><strong>$6 one-time</strong> (lifetime)</li>
+      </ul>
+    </div>
+
+    <div class="grid">
+      <div class="row">
+        <input id="key" placeholder="Enter license key…" style="flex:1" />
+        <button id="save" class="primary">Save Key</button>
+      </div>
+      <div class="hint">Dev keys: <code>SWLIFE-TEST-PAID-ONCE</code> or <code>SWLIFE-TEST-SUB-MONTH</code></div>
+      <div class="row">
+        <button id="buy-once">Buy $6 (mock)</button>
+        <button id="sub-month">Subscribe $1/mo (mock)</button>
+      </div>
+      <div id="status" class="hint"></div>
+    </div>
+  </div>
+
+  <script src="../common/storage.js"></script>
+  <script src="../license/mock_verifier.js"></script>
+  <script src="../license/verifier.js"></script>
+  <script src="billing.js"></script>
+</body>
+</html>

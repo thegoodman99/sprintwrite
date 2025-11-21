@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SprintWrite Options</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚡ SprintWrite Settings</h1>
+      <p class="subtitle">Customize your writing sprint experience</p>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>🎨 Theme Settings</h2>
+        <div class="form-group">
+          <label for="theme">Color Theme</label>
+          <select id="theme" class="form-control">
+            <option value="light">☀️ Light</option>
+            <option value="dark">🌙 Dark</option>
+            <option value="nord">❄️ Nord</option>
+            <option value="solar">🌅 Solarized</option>
+            <option value="midnight">🌃 Midnight</option>
+          </select>
+        </div>
+        <button id="save-theme" class="btn btn-primary">Save Theme</button>
+      </section>
+
+      <section class="card">
+        <h2>⚙️ Preferences</h2>
+        <p class="muted">Customize your sprint experience</p>
+        
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="sound-toggle" checked>
+            <span>🔊 Sound Effects</span>
+          </label>
+          <p class="help-text">Play sound when sprint completes</p>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="celebration-toggle" checked>
+            <span>🎉 Celebration Screen</span>
+          </label>
+          <p class="help-text">Show celebration overlay when sprint completes</p>
+        </div>
+
+        <button id="save-preferences" class="btn btn-primary">Save Preferences</button>
+      </section>
+
+      <section class="card">
+        <h2>📊 Statistics & History</h2>
+        <p class="muted">Track your writing progress over time</p>
+        
+        <!-- Statistics Summary -->
+        <div class="stats-summary" id="stats-summary">
+          <div class="stat-card">
+            <div class="stat-value" id="stat-sprints">0</div>
+            <div class="stat-label">Total Sprints</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-minutes">0</div>
+            <div class="stat-label">Minutes Written</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-words">0</div>
+            <div class="stat-label">Words Written</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-wpm">0</div>
+            <div class="stat-label">Avg Words/Min</div>
+          </div>
+        </div>
+        
+        <div class="history-controls">
+          <button id="refresh" class="btn btn-secondary">🔄 Refresh</button>
+          <button id="export" class="btn btn-secondary">📥 Export Data</button>
+          <button id="clear-history" class="btn btn-danger">🗑️ Clear History</button>
+        </div>
+
+        <div class="table-container">
+          <table id="hist">
+            <thead>
+              <tr>
+                <th>Date & Time</th>
+                <th>Duration</th>
+                <th>Completed</th>
+                <th>Words</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <p id="hist-empty" class="empty-message">Loading history...</p>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>ℹ️ About</h2>
+        <p class="about-text">
+          SprintWrite helps writers stay focused and productive with timed writing sprints.
+          Track your progress and build better writing habits - completely free!
+        </p>
+        <div class="version">Version 2.3.0</div>
+        <div class="links">
+          <a href="https://ko-fi.com/thegoodman99" target="_blank">Support</a>
+          <a href="https://ko-fi.com/thegoodman99" target="_blank">Ko-fi</a>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="../common/util.js"></script>
+  <script src="../common/storage.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

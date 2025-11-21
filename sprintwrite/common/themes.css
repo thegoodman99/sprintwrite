@@ -1,0 +1,47 @@
+:root {
+  --sw-font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  --sw-bg: #ffffff;
+  --sw-fg: #1f2937;
+  --sw-muted: #6b7280;
+  --sw-accent: #2563eb;
+  --sw-success: #059669;
+  --sw-danger: #dc2626;
+  --sw-panel: #f3f4f6;
+  --sw-border: #e5e7eb;
+}
+
+.sw-theme-dark {
+  --sw-bg: #0b1220;
+  --sw-fg: #e5e7eb;
+  --sw-muted: #9ca3af;
+  --sw-panel: #111827;
+  --sw-border: #1f2937;
+  --sw-accent: #60a5fa;
+}
+
+.sw-theme-nord {
+  --sw-bg: #2e3440;
+  --sw-fg: #e5e9f0;
+  --sw-muted: #d8dee9;
+  --sw-panel: #3b4252;
+  --sw-border: #4c566a;
+  --sw-accent: #88c0d0;
+}
+
+.sw-theme-solar {
+  --sw-bg: #fdf6e3;
+  --sw-fg: #073642;
+  --sw-muted: #586e75;
+  --sw-panel: #eee8d5;
+  --sw-border: #e1d9c9;
+  --sw-accent: #b58900;
+}
+
+.sw-theme-midnight {
+  --sw-bg: #12131a;
+  --sw-fg: #e6e6e6;
+  --sw-muted: #9ea3b0;
+  --sw-panel: #171924;
+  --sw-border: #202333;
+  --sw-accent: #7c9ef3;
+}
