@@ -13,7 +13,7 @@
 #sw-root.sw-compact {
   position: fixed !important;
   top: 8px !important;
-  right: clamp(240px, 15vw, 320px) !important; /* Responsive right positioning */
+  /* Right positioning is handled dynamically in JS */
   z-index: 1000;
 }
 
@@ -24,19 +24,8 @@
   padding: 0;
 }
 
-/* Ensure compact mode stays visible on smaller screens */
-@media (max-width: 1200px) {
-  #sw-root.sw-compact {
-    right: 200px !important;
-  }
-}
-
+/* Responsive sizing for compact mode */
 @media (max-width: 900px) {
-  #sw-root.sw-compact {
-    right: 150px !important;
-    top: 12px !important;
-  }
-  
   #sw-root.sw-compact .sw-card {
     width: 200px;
   }

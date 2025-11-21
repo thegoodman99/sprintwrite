@@ -67,6 +67,7 @@
   root.style.right = state.position.right + 'px';
   if (state.compactMode) {
     root.classList.add('sw-compact');
+    positionToolbarMode(root);
   }
   applyThemeClass(root, state.theme);
   document.documentElement.appendChild(root);
@@ -81,6 +82,17 @@
     if (theme === 'nord') el.classList.add('sw-theme-nord');
     if (theme === 'solar') el.classList.add('sw-theme-solar');
     if (theme === 'midnight') el.classList.add('sw-theme-midnight');
+  }
+
+  function positionToolbarMode(root) {
+    // Position toolbar mode to the left of the revision history button
+    const revisionButton = document.querySelector('#docs-revisions-appbarbutton');
+    if (revisionButton) {
+      const rect = revisionButton.getBoundingClientRect();
+      const rightOffset = window.innerWidth - rect.left + 8; // 8px gap
+      root.style.right = rightOffset + 'px';
+      root.style.top = '8px';
+    }
   }
 
   function makeDraggable(root, state) {
@@ -107,9 +119,9 @@
     header.addEventListener('mousedown', (e) => {
       // Don't drag in compact mode
       if (state.compactMode) return;
-      // Don't drag if clicking on buttons
-      if (e.target.closest('.sw-menu') || e.target.closest('.sw-minimize')) return;
-      
+      // Don't drag if clicking on buttons or logo
+      if (e.target.closest('.sw-menu') || e.target.closest('.sw-minimize') || e.target.closest('.sw-logo')) return;
+
       isDragging = true;
       startX = e.clientX;
       startY = e.clientY;
@@ -228,6 +240,7 @@
             <img src="${chrome.runtime.getURL('icons/' + (state.compactMode ? 'toolbar_20px.png' : 'header_24px.png'))}"
                  alt="SprintWrite"
                  class="sw-logo"
+                 title="Click to ${state.minimized ? 'expand' : 'collapse'}"
                  style="height: ${state.compactMode ? '20px' : '24px'}; width: auto; display: block;">
           </div>
           <button class="sw-minimize" title="${minimizeLabel}" aria-label="${minimizeLabel} widget">${minimizeIcon}</button>
@@ -345,6 +358,21 @@
       };
     }
 
+    // Logo click to toggle minimize
+    const logo = root.querySelector('.sw-logo');
+    if (logo) {
+      logo.onclick = async (e) => {
+        e.stopPropagation(); // Prevent drag
+        state.minimized = !state.minimized;
+        const s = await Storage.getSettings();
+        s.minimized = state.minimized;
+        await Storage.setSettings(s);
+        root.innerHTML = render(state);
+        bindUI(root, state);
+      };
+      logo.style.cursor = 'pointer';
+    }
+
     // Menu
     const menu = root.querySelector('#sw-menu');
     const panel = root.querySelector('#sw-menu-panel');
@@ -395,13 +423,17 @@
         s.compactMode = state.compactMode;
         await Storage.setSettings(s);
         
-        // Toggle class
+        // Toggle class and reposition
         if (state.compactMode) {
           root.classList.add('sw-compact');
+          positionToolbarMode(root);
         } else {
           root.classList.remove('sw-compact');
+          // Restore saved position for float mode
+          root.style.top = state.position.top + 'px';
+          root.style.right = state.position.right + 'px';
         }
-        
+
         // Re-render to update menu text
         root.innerHTML = render(state);
         bindUI(root, state);
