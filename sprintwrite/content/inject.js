@@ -1000,7 +1000,7 @@
     });
 
     // Copy stats function
-    const copyStats = () => {
+    const copyStats = async () => {
       const filteredHist = filterByPeriod(hist, currentPeriod);
       if (filteredHist.length === 0) {
         alert('No stats to copy for this period!');
@@ -1096,7 +1096,7 @@ Created by: ko-fi.com/thegoodman99`;
     // Take most recent 50
     const recent = sorted.slice(0, 50);
     
-    const historyRows = recent.map((record, i) => {
+    const historyRows = recent.map((record) => {
       const date = new Date(record.startISO);
       const dateStr = date.toLocaleDateString();
       const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
