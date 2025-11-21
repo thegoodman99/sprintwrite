@@ -84,7 +84,7 @@
     if (theme === 'midnight') el.classList.add('sw-theme-midnight');
   }
 
-  function positionToolbarMode(root) {
+  function positionToolbarMode(root, retries = 0) {
     // Position toolbar mode to the left of the revision history button
     const revisionButton = document.querySelector('#docs-revisions-appbarbutton');
     if (revisionButton) {
@@ -92,6 +92,16 @@
       const rightOffset = window.innerWidth - rect.left + 8; // 8px gap
       root.style.right = rightOffset + 'px';
       root.style.top = '8px';
+      console.log('SprintWrite: Positioned in toolbar mode');
+    } else if (retries < 20) {
+      // Element not ready yet, retry after a short delay
+      setTimeout(() => positionToolbarMode(root, retries + 1), 250);
+      console.log('SprintWrite: Waiting for Google Docs toolbar... (attempt', retries + 1, ')');
+    } else {
+      // Fallback position if element never loads
+      root.style.right = '240px';
+      root.style.top = '8px';
+      console.log('SprintWrite: Using fallback toolbar position');
     }
   }
 
