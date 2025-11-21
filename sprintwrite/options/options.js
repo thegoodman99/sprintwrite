@@ -5,6 +5,12 @@
   const soundToggle = document.getElementById('sound-toggle');
   const celebrationToggle = document.getElementById('celebration-toggle');
   const savePreferences = document.getElementById('save-preferences');
+  const dailyGoalInput = document.getElementById('daily-goal');
+  const saveGoal = document.getElementById('save-goal');
+  const todayProgress = document.getElementById('today-progress');
+  const goalProgressText = document.getElementById('goal-progress-text');
+  const goalBarFill = document.getElementById('goal-bar-fill');
+  const goalSprintsText = document.getElementById('goal-sprints-text');
   const refresh = document.getElementById('refresh');
   const exportBtn = document.getElementById('export');
   const clearBtn = document.getElementById('clear-history');
@@ -26,6 +32,52 @@
     const s = await Storage.getSettings();
     soundToggle.checked = s.sound ?? true;
     celebrationToggle.checked = s.celebration ?? true;
+  }
+
+  async function loadGoal() {
+    const s = await Storage.getSettings();
+    dailyGoalInput.value = s.dailyGoal || 0;
+    await updateGoalProgress();
+  }
+
+  async function updateGoalProgress() {
+    const s = await Storage.getSettings();
+    const goal = s.dailyGoal || 0;
+
+    if (goal === 0) {
+      todayProgress.style.display = 'none';
+      return;
+    }
+
+    const progress = await Storage.getTodayProgress();
+    const wordsWritten = progress.wordsWritten;
+    const sprintsCompleted = progress.sprintsCompleted;
+    const percentage = Math.min(100, (wordsWritten / goal) * 100);
+
+    todayProgress.style.display = 'block';
+    goalProgressText.textContent = `${wordsWritten.toLocaleString()} / ${goal.toLocaleString()} words`;
+    goalBarFill.style.width = percentage + '%';
+    goalSprintsText.textContent = `${sprintsCompleted} sprint${sprintsCompleted !== 1 ? 's' : ''} completed today`;
+  }
+
+  async function saveGoalNow() {
+    const s = await Storage.getSettings();
+    const goalValue = parseInt(dailyGoalInput.value, 10);
+
+    if (isNaN(goalValue) || goalValue < 0) {
+      showToast('Please enter a valid goal (0 or higher)', 'error');
+      return;
+    }
+
+    s.dailyGoal = goalValue;
+    await Storage.setSettings(s);
+    await updateGoalProgress();
+
+    if (goalValue === 0) {
+      showToast('Daily goal disabled');
+    } else {
+      showToast(`Daily goal set to ${goalValue.toLocaleString()} words!`);
+    }
   }
 
   async function saveThemeNow() {
@@ -160,10 +212,12 @@
 
   saveTheme.onclick = saveThemeNow;
   savePreferences.onclick = savePreferencesNow;
+  saveGoal.onclick = saveGoalNow;
   exportBtn.onclick = exportCsv;
   clearBtn.onclick = clearHistory;
-  refresh.onclick = async () => { 
+  refresh.onclick = async () => {
     await refreshHistory();
+    await updateGoalProgress();
     showToast('History refreshed!');
   };
 
@@ -177,5 +231,6 @@
 
   await loadTheme();
   await loadPreferences();
+  await loadGoal();
   await refreshHistory();
 })();

@@ -18,7 +18,8 @@ const Storage = {
     const def = {
       theme: 'light', // light | dark | nord | solar | midnight
       sound: true,
-      plan: 'FREE' // FREE | PRO_LIFETIME | PRO_SUB - mirrored from license
+      plan: 'FREE', // FREE | PRO_LIFETIME | PRO_SUB - mirrored from license
+      dailyGoal: 0 // Daily word count goal (0 = disabled)
     };
     const saved = await Storage.get(SW_KEYS.SETTINGS);
     return { ...def, ...(saved || {}) };
@@ -48,5 +49,25 @@ const Storage = {
       local.push(rec);
       await Storage.set(SW_KEYS.HISTORY, local, 'local');
     }
+  },
+  async getTodayProgress() {
+    const history = await Storage.getHistory();
+    const today = new Date();
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    // Sum words gained from all sprints today
+    const todaysSprints = history.filter(record => {
+      const recordDate = new Date(record.startISO);
+      return recordDate >= startOfToday;
+    });
+
+    const totalWordsToday = todaysSprints.reduce((sum, record) => {
+      return sum + (record.wordsGained || 0);
+    }, 0);
+
+    return {
+      wordsWritten: totalWordsToday,
+      sprintsCompleted: todaysSprints.length
+    };
   }
 };

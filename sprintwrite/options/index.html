@@ -53,6 +53,30 @@
       </section>
 
       <section class="card">
+        <h2>🎯 Daily Goal</h2>
+        <p class="muted">Set a daily word count target to track your progress</p>
+
+        <div class="form-group">
+          <label for="daily-goal">Daily Word Count Goal</label>
+          <input type="number" id="daily-goal" class="form-control" min="0" max="50000" step="100" placeholder="0 (disabled)">
+          <p class="help-text">Set to 0 to disable. Tracks total words written today across all sprints.</p>
+        </div>
+
+        <div id="today-progress" class="goal-progress" style="display: none;">
+          <div class="goal-header">
+            <span>Today's Progress</span>
+            <span id="goal-progress-text">0 / 0 words</span>
+          </div>
+          <div class="goal-bar">
+            <div id="goal-bar-fill" class="goal-bar-fill"></div>
+          </div>
+          <p class="goal-sprints" id="goal-sprints-text">0 sprints completed</p>
+        </div>
+
+        <button id="save-goal" class="btn btn-primary">Save Goal</button>
+      </section>
+
+      <section class="card">
         <h2>📊 Statistics & History</h2>
         <p class="muted">Track your writing progress over time</p>
         

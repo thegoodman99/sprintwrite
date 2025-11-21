@@ -36,6 +36,7 @@
   }, 2000); // Wait 2 seconds for Google Docs to fully load
 
   const settings = await Storage.getSettings();
+  const todayProgress = await Storage.getTodayProgress();
 
   const state = {
     running: false,
@@ -54,7 +55,9 @@
     celebration: settings.celebration ?? true, // DEFAULT: Show celebrations!
     minimized: settings.minimized ?? true, // DEFAULT: Minimized on load!
     compactMode: settings.compactMode ?? true, // DEFAULT: Toolbar mode!
-    position: settings.position || { top: 100, right: 12 }
+    position: settings.position || { top: 100, right: 12 },
+    dailyGoal: settings.dailyGoal || 0,
+    todayWordsWritten: todayProgress.wordsWritten
   };
 
   // Inject root
@@ -153,6 +156,31 @@
     });
   }
 
+  function renderDailyGoal(state) {
+    if (!state.dailyGoal || state.dailyGoal === 0) {
+      return '';
+    }
+
+    const wordsWritten = state.todayWordsWritten;
+    const percentage = Math.min(100, (wordsWritten / state.dailyGoal) * 100);
+    const remaining = Math.max(0, state.dailyGoal - wordsWritten);
+
+    return `
+      <div class="sw-daily-goal">
+        <div class="sw-goal-header">
+          <span class="sw-mini">🎯 Daily Goal</span>
+          <span class="sw-mini" style="color: var(--sw-accent); font-weight: 600;">${wordsWritten.toLocaleString()} / ${state.dailyGoal.toLocaleString()}</span>
+        </div>
+        <div class="sw-goal-bar">
+          <div class="sw-goal-fill" style="width: ${percentage}%"></div>
+        </div>
+        <div class="sw-mini" style="text-align: center; color: var(--sw-text-secondary); margin-top: 4px;">
+          ${remaining > 0 ? `${remaining.toLocaleString()} words to go` : '✓ Goal reached!'}
+        </div>
+      </div>
+    `;
+  }
+
   function render(state) {
     // Calculate time to display
     let timeToShow;
@@ -206,7 +234,7 @@
             <a href="#" id="sw-view-history" role="menuitem">📜 View History</a>
             <a href="#" id="sw-view-stats" role="menuitem">📊 Statistics</a>
             <a href="#" id="sw-export-data" role="menuitem">📥 Export Data</a>
-            <a href="https://ko-fi.com/thegoodman99" target="_blank" role="menuitem">☕ Buy Me a Coffee</a>
+            <a href="https://ko-fi.com/thegoodman99" target="_blank" role="menuitem">☕ Buy Me a Drink</a>
           </div>
         </div>
 
@@ -225,6 +253,8 @@
           <div class="sw-progress-bar">
             <div class="sw-progress-fill" id="sw-progress" style="width: 0%"></div>
           </div>
+
+          ${renderDailyGoal(state)}
 
           <div class="sw-row" id="sw-duration" style="gap: 6px; flex-wrap: wrap;">
             <button class="sw-dur-btn ${state.durationSec===900?'active':''}" data-duration="900">15m</button>
@@ -1116,6 +1146,19 @@ Support: ko-fi.com/thegoodman99`;
     // Save history
     if (completedSec > 0) {
       await Storage.appendHistory(record);
+
+      // Update today's progress for daily goal
+      const previousWordsToday = state.todayWordsWritten;
+      state.todayWordsWritten += wordsGained;
+
+      // Check if daily goal was just reached
+      const goalReached = state.dailyGoal > 0 &&
+                          previousWordsToday < state.dailyGoal &&
+                          state.todayWordsWritten >= state.dailyGoal;
+
+      if (goalReached && state.celebration) {
+        showGoalCelebration(state.dailyGoal);
+      }
     }
 
     if (state.sound && natural) {
@@ -1126,7 +1169,7 @@ Support: ko-fi.com/thegoodman99`;
       showCelebration(wordsGained, state.wordsPerMinute);
     }
 
-    // Re-render to show WPM
+    // Re-render to show WPM and updated daily goal
     root.innerHTML = render(state);
     bindUI(root, state);
   }
@@ -1149,7 +1192,7 @@ Support: ko-fi.com/thegoodman99`;
       const kofiLink = showKofi ? `
         <div style="margin-top: 12px; font-size: 12px; opacity: 0.9;">
           <a href="https://ko-fi.com/thegoodman99" target="_blank" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 4px; justify-content: center;">
-            ☕ Enjoying SprintWrite? Buy me a coffee!
+            ☕ Enjoying SprintWrite? Buy me a Drink!
           </a>
         </div>
       ` : '';
@@ -1175,6 +1218,30 @@ Support: ko-fi.com/thegoodman99`;
         setTimeout(() => celebDiv.remove(), 300);
       }, showKofi ? 5000 : 3000); // Show longer if Ko-fi link present
     });
+  }
+
+  function showGoalCelebration(goal) {
+    const celebDiv = document.createElement('div');
+    celebDiv.className = 'sw-celebration';
+    celebDiv.innerHTML = `
+      <div class="sw-celebration-content">
+        <div class="sw-celebration-emoji">🎯</div>
+        <div class="sw-celebration-text">Daily Goal Reached!</div>
+        <div class="sw-celebration-stats">
+          <div>${goal.toLocaleString()} words today!</div>
+        </div>
+        <div style="margin-top: 12px; font-size: 14px; opacity: 0.9; color: var(--sw-success);">
+          Keep up the amazing work! ✨
+        </div>
+      </div>
+    `;
+    document.body.appendChild(celebDiv);
+
+    setTimeout(() => celebDiv.classList.add('sw-celebration-show'), 10);
+    setTimeout(() => {
+      celebDiv.classList.remove('sw-celebration-show');
+      setTimeout(() => celebDiv.remove(), 300);
+    }, 4000);
   }
 
   // Initialize word count display
