@@ -42,7 +42,13 @@
         "icons/header_28px.png",
         "icons/toolbar_16px.png",
         "icons/toolbar_20px.png",
-        "icons/toolbar_22px.png"
+        "icons/toolbar_22px.png",
+        "icons/large_256px.png",
+        "icons/large_512px.png",
+        "icons/large_1024px.png",
+        "icons/logo_with_title_256px.png",
+        "icons/logo_with_title_512px.png",
+        "icons/logo_with_title_1024px.png"
       ],
       "matches": ["https://docs.google.com/*"]
     }

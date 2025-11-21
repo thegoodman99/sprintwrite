@@ -954,8 +954,13 @@
     const statsHtml = `
       <div class="sw-stats-overlay">
         <div class="sw-stats-panel">
-          <h2>📊 Your Statistics</h2>
-          
+          <div style="text-align: center; margin-bottom: 24px;">
+            <img src="${chrome.runtime.getURL('icons/logo_with_title_256px.png')}"
+                 alt="SprintWrite"
+                 style="max-width: 200px; height: auto;">
+            <h2 style="margin: 12px 0 0 0; font-size: 20px;">📊 Your Statistics</h2>
+          </div>
+
           <div class="sw-stats-tabs">
             <button class="sw-stats-tab active" data-period="all">All Time</button>
             <button class="sw-stats-tab" data-period="month">Month</button>
@@ -1104,7 +1109,12 @@ Support: ko-fi.com/thegoodman99`;
     const historyHtml = `
       <div class="sw-stats-overlay">
         <div class="sw-stats-panel" style="max-width: 700px;">
-          <h2>📜 Global Sprint History</h2>
+          <div style="text-align: center; margin-bottom: 20px;">
+            <img src="${chrome.runtime.getURL('icons/logo_with_title_256px.png')}"
+                 alt="SprintWrite"
+                 style="max-width: 200px; height: auto;">
+            <h2 style="margin: 12px 0 8px 0; font-size: 20px;">📜 Global Sprint History</h2>
+          </div>
           <p style="margin: 0 0 8px 0; color: #666; font-size: 13px;">
             Showing your ${recent.length} most recent sprints${hist.length > 50 ? ` (of ${hist.length} total)` : ''}
           </p>
