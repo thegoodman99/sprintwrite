@@ -127,6 +127,17 @@
   user-select: none;
 }
 
+#sw-root .sw-logo {
+  display: block;
+  max-width: 100%;
+  object-fit: contain;
+  transition: opacity 0.2s;
+}
+
+#sw-root .sw-logo:hover {
+  opacity: 0.9;
+}
+
 #sw-root .sw-minimize {
   background: transparent;
   border: none;

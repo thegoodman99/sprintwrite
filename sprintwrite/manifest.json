@@ -33,5 +33,18 @@
       "css": ["common/themes.css", "content/widget.css"],
       "run_at": "document_idle"
     }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icons/header_20px.png",
+        "icons/header_24px.png",
+        "icons/header_28px.png",
+        "icons/toolbar_16px.png",
+        "icons/toolbar_20px.png",
+        "icons/toolbar_22px.png"
+      ],
+      "matches": ["https://docs.google.com/*"]
+    }
   ]
 }

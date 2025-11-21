@@ -225,7 +225,10 @@
       <div class="sw-card${minimizedClass}" aria-live="polite">
         <div class="sw-header">
           <div class="sw-header-title" style="display:flex;gap:8px;align-items:center;flex:1">
-            <strong>SprintWrite</strong>
+            <img src="${chrome.runtime.getURL('icons/' + (state.compactMode ? 'toolbar_20px.png' : 'header_24px.png'))}"
+                 alt="SprintWrite"
+                 class="sw-logo"
+                 style="height: ${state.compactMode ? '20px' : '24px'}; width: auto; display: block;">
           </div>
           <button class="sw-minimize" title="${minimizeLabel}" aria-label="${minimizeLabel} widget">${minimizeIcon}</button>
           <div class="sw-menu" id="sw-menu" role="button" aria-label="Menu" tabindex="0">⋮</div>
