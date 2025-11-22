@@ -841,44 +841,83 @@
         setTimeout(() => {
           console.log('SprintWrite: Looking for checkbox in word count dialog...');
 
-          // Debug: Check if dialog exists
-          const dialog = document.querySelector('[role="dialog"]');
-          console.log('SprintWrite: Dialog found:', !!dialog);
+          // Find the Word Count dialog specifically (not Gemini or other dialogs)
+          let wordCountDialog = null;
+          const allDialogs = document.querySelectorAll('[role="dialog"]');
+          console.log('SprintWrite: Found', allDialogs.length, 'dialog(s) total');
 
-          if (dialog) {
-            console.log('SprintWrite: Dialog HTML:', dialog.innerHTML.substring(0, 500));
+          for (const dialog of allDialogs) {
+            const dialogText = dialog.textContent || '';
+            console.log('SprintWrite: Dialog text preview:', dialogText.substring(0, 100));
 
-            // Debug: List all checkboxes in dialog
-            const allCheckboxes = dialog.querySelectorAll('input[type="checkbox"]');
-            console.log('SprintWrite: Found', allCheckboxes.length, 'checkbox(es) in dialog');
-
-            allCheckboxes.forEach((cb, i) => {
-              console.log(`SprintWrite: Checkbox ${i}:`, {
-                id: cb.id,
-                name: cb.name,
-                jsname: cb.getAttribute('jsname'),
-                ariaLabel: cb.getAttribute('aria-label'),
-                checked: cb.checked,
-                className: cb.className,
-                parentText: cb.parentElement?.textContent?.substring(0, 100)
-              });
-            });
+            // Look for the dialog containing "word count" or "Display word count"
+            if (dialogText.toLowerCase().includes('word count') || dialogText.includes('Display word count')) {
+              wordCountDialog = dialog;
+              console.log('SprintWrite: Found Word Count dialog!');
+              break;
+            }
           }
 
-          // Try multiple selectors for the checkbox
-          let checkbox = document.querySelector('input[aria-label*="Display word count"]');
-          console.log('SprintWrite: Found by aria-label:', !!checkbox);
+          if (!wordCountDialog) {
+            console.log('SprintWrite: Could not find Word Count dialog among', allDialogs.length, 'dialogs');
+            // Try to find checkbox anywhere in document as fallback
+            const allCheckboxes = document.querySelectorAll('input[type="checkbox"]');
+            console.log('SprintWrite: Searching all', allCheckboxes.length, 'checkboxes in document...');
 
-          if (!checkbox && dialog) {
-            // Look for checkbox by type
-            const checkboxes = dialog.querySelectorAll('input[type="checkbox"]');
+            for (const cb of allCheckboxes) {
+              const parent = cb.closest('div');
+              const parentText = parent?.textContent || '';
+              if (parentText.includes('Display word count')) {
+                wordCountDialog = cb.closest('[role="dialog"]');
+                console.log('SprintWrite: Found Word Count dialog via checkbox parent!');
+                break;
+              }
+            }
+          }
+
+          if (!wordCountDialog) {
+            console.log('SprintWrite: Still could not find Word Count dialog');
+            const okBtn = document.querySelector('button[name="ok"]');
+            if (okBtn) okBtn.click();
+            showManualInstructions();
+            return false;
+          }
+
+          console.log('SprintWrite: Word Count dialog HTML:', wordCountDialog.innerHTML.substring(0, 500));
+
+          // Debug: List all checkboxes in the Word Count dialog
+          const allCheckboxes = wordCountDialog.querySelectorAll('input[type="checkbox"]');
+          console.log('SprintWrite: Found', allCheckboxes.length, 'checkbox(es) in Word Count dialog');
+
+          allCheckboxes.forEach((cb, i) => {
+            console.log(`SprintWrite: Checkbox ${i}:`, {
+              id: cb.id,
+              name: cb.name,
+              jsname: cb.getAttribute('jsname'),
+              ariaLabel: cb.getAttribute('aria-label'),
+              checked: cb.checked,
+              className: cb.className,
+              parentText: cb.parentElement?.textContent?.substring(0, 100)
+            });
+          });
+
+          // Find the "Display word count" checkbox
+          let checkbox = null;
+
+          // Try by aria-label first
+          checkbox = wordCountDialog.querySelector('input[aria-label*="Display word count"]');
+          if (checkbox) console.log('SprintWrite: Found by aria-label!');
+
+          // Try by searching all checkboxes in dialog
+          if (!checkbox) {
+            const checkboxes = wordCountDialog.querySelectorAll('input[type="checkbox"]');
             for (const cb of checkboxes) {
               const label = cb.getAttribute('aria-label') || '';
               const jsname = cb.getAttribute('jsname') || '';
-              const parent = cb.closest('.goog-inline-block') || cb.closest('div[class*="Checkbox"]');
+              const parent = cb.closest('.goog-inline-block') || cb.closest('div');
               const parentText = parent?.textContent || '';
 
-              console.log('SprintWrite: Checking checkbox with label:', label, 'jsname:', jsname, 'parentText:', parentText.substring(0, 50));
+              console.log('SprintWrite: Checking checkbox with label:', label, 'jsname:', jsname, 'parentText:', parentText.substring(0, 80));
 
               if (label.includes('Display') || parentText.includes('Display word count') || jsname === 'YPqjbf') {
                 checkbox = cb;
@@ -889,9 +928,7 @@
           }
 
           if (!checkbox) {
-            console.log('SprintWrite: Could not find checkbox in dialog after trying all methods');
-            console.log('SprintWrite: Available input elements:', dialog?.querySelectorAll('input').length);
-            // Try to close any open dialog
+            console.log('SprintWrite: Could not find checkbox in Word Count dialog after trying all methods');
             const okBtn = document.querySelector('button[name="ok"]');
             if (okBtn) okBtn.click();
             showManualInstructions();
