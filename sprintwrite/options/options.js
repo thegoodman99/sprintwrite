@@ -12,6 +12,7 @@
   const goalBarFill = document.getElementById('goal-bar-fill');
   const goalSprintsText = document.getElementById('goal-sprints-text');
   const refresh = document.getElementById('refresh');
+  const shareBtn = document.getElementById('share-stats');
   const exportBtn = document.getElementById('export');
   const clearBtn = document.getElementById('clear-history');
   const histTable = document.getElementById('hist').querySelector('tbody');
@@ -189,12 +190,60 @@
     if (!confirm('Are you sure you want to clear all history? This cannot be undone.')) {
       return;
     }
-    
+
     await Storage.set('sw_history', [], 'sync');
     await Storage.set('sw_history', [], 'local');
-    
+
     await refreshHistory();
     showToast('History cleared successfully!');
+  }
+
+  async function shareStats() {
+    const hist = await Storage.getHistory();
+    if (hist.length === 0) {
+      showToast('No stats to share yet. Complete some sprints first!', 'error');
+      return;
+    }
+
+    // Calculate statistics
+    const totalSprints = hist.length;
+    const totalMinutes = hist.reduce((a, r) => a + Math.floor(r.completedSec / 60), 0);
+    const totalWords = hist.reduce((a, r) => a + (r.wordsGained || 0), 0);
+    const avgWPM = totalMinutes > 0 ? Math.round(totalWords / totalMinutes) : 0;
+
+    // Get daily goal progress if available
+    const settings = await Storage.getSettings();
+    const dailyGoal = settings.dailyGoal || 0;
+    let goalSection = '';
+
+    if (dailyGoal > 0) {
+      const progress = await Storage.getTodayProgress();
+      const percentage = Math.min(100, Math.round((progress.wordsWritten / dailyGoal) * 100));
+      goalSection = `
+Daily Goal Progress: ${progress.wordsWritten.toLocaleString()} / ${dailyGoal.toLocaleString()} words (${percentage}%)
+`;
+    }
+
+    const statsText = `SprintWrite – Writing Sprint Timer
+All Time Statistics
+
+Total Sprints: ${totalSprints}
+Minutes Written: ${totalMinutes}
+Words Written: ${totalWords.toLocaleString()}
+Avg Words/Min: ${avgWPM}${goalSection}
+Keep writing!
+
+Track YOUR writing sprints FREE:
+Chrome Extension: chrome.google.com/webstore (search "SprintWrite")
+Created by: ko-fi.com/thegoodman99`;
+
+    try {
+      await navigator.clipboard.writeText(statsText);
+      showToast('Stats copied to clipboard! Ready to share.');
+    } catch (err) {
+      console.error('Failed to copy stats:', err);
+      showToast('Failed to copy stats. Please try again.', 'error');
+    }
   }
 
   function showToast(message, type = 'success') {
@@ -213,6 +262,7 @@
   saveTheme.onclick = saveThemeNow;
   savePreferences.onclick = savePreferencesNow;
   saveGoal.onclick = saveGoalNow;
+  shareBtn.onclick = shareStats;
   exportBtn.onclick = exportCsv;
   clearBtn.onclick = clearHistory;
   refresh.onclick = async () => {

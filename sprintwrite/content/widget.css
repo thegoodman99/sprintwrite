@@ -241,6 +241,13 @@
   border-color: var(--sw-accent);
 }
 
+#sw-root .sw-dur-btn.active:hover {
+  background: var(--sw-accent);
+  color: white;
+  transform: none;
+  box-shadow: none;
+}
+
 #sw-root .sw-dur-btn:hover:not(.active) {
   background: var(--sw-bg);
   transform: translateY(-1px);
