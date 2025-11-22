@@ -19,7 +19,10 @@ const Storage = {
       theme: 'light', // light | dark | nord | solar | midnight
       sound: true,
       plan: 'FREE', // FREE | PRO_LIFETIME | PRO_SUB - mirrored from license
-      dailyGoal: 0 // Daily word count goal (0 = disabled)
+      dailyGoal: 0, // Daily word count goal (0 = disabled)
+      timerPreset1: 15, // First timer preset in minutes
+      timerPreset2: 20, // Second timer preset in minutes
+      timerPreset3: 30  // Third timer preset in minutes
     };
     const saved = await Storage.get(SW_KEYS.SETTINGS);
     return { ...def, ...(saved || {}) };

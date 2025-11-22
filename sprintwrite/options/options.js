@@ -5,6 +5,10 @@
   const soundToggle = document.getElementById('sound-toggle');
   const celebrationToggle = document.getElementById('celebration-toggle');
   const savePreferences = document.getElementById('save-preferences');
+  const timerPreset1 = document.getElementById('timer-preset-1');
+  const timerPreset2 = document.getElementById('timer-preset-2');
+  const timerPreset3 = document.getElementById('timer-preset-3');
+  const saveTimerPresets = document.getElementById('save-timer-presets');
   const dailyGoalInput = document.getElementById('daily-goal');
   const saveGoal = document.getElementById('save-goal');
   const todayProgress = document.getElementById('today-progress');
@@ -33,6 +37,13 @@
     const s = await Storage.getSettings();
     soundToggle.checked = s.sound ?? true;
     celebrationToggle.checked = s.celebration ?? true;
+  }
+
+  async function loadTimerPresets() {
+    const s = await Storage.getSettings();
+    timerPreset1.value = s.timerPreset1 || 15;
+    timerPreset2.value = s.timerPreset2 || 20;
+    timerPreset3.value = s.timerPreset3 || 30;
   }
 
   async function loadGoal() {
@@ -104,15 +115,38 @@
     s.sound = soundToggle.checked;
     s.celebration = celebrationToggle.checked;
     await Storage.setSettings(s);
-    
+
     // Notify content script to refresh
     chrome.tabs.query({url: 'https://docs.google.com/document/*'}, (tabs) => {
       tabs.forEach(tab => {
         chrome.tabs.sendMessage(tab.id, {action: 'REFRESH_WIDGET'}).catch(() => {});
       });
     });
-    
+
     showToast('Preferences saved successfully!');
+  }
+
+  async function saveTimerPresetsNow() {
+    const s = await Storage.getSettings();
+
+    // Validate inputs
+    const preset1 = parseInt(timerPreset1.value, 10);
+    const preset2 = parseInt(timerPreset2.value, 10);
+    const preset3 = parseInt(timerPreset3.value, 10);
+
+    if (isNaN(preset1) || preset1 < 1 || preset1 > 180 ||
+        isNaN(preset2) || preset2 < 1 || preset2 > 180 ||
+        isNaN(preset3) || preset3 < 1 || preset3 > 180) {
+      showToast('Please enter valid timer values (1-180 minutes)', 'error');
+      return;
+    }
+
+    s.timerPreset1 = preset1;
+    s.timerPreset2 = preset2;
+    s.timerPreset3 = preset3;
+    await Storage.setSettings(s);
+
+    showToast('Timer presets saved! Reload your Google Docs to see changes.');
   }
 
   async function refreshHistory() {
@@ -261,6 +295,7 @@ Created by: ko-fi.com/thegoodman99`;
 
   saveTheme.onclick = saveThemeNow;
   savePreferences.onclick = savePreferencesNow;
+  saveTimerPresets.onclick = saveTimerPresetsNow;
   saveGoal.onclick = saveGoalNow;
   shareBtn.onclick = shareStats;
   exportBtn.onclick = exportCsv;
@@ -281,6 +316,7 @@ Created by: ko-fi.com/thegoodman99`;
 
   await loadTheme();
   await loadPreferences();
+  await loadTimerPresets();
   await loadGoal();
   await refreshHistory();
 })();

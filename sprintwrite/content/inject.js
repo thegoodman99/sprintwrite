@@ -45,7 +45,7 @@
     endEpoch: 0,
     pausedAt: 0,
     totalPausedTime: 0,
-    durationSec: 15*60, // Default 15 minutes
+    durationSec: (settings.timerPreset1 || 15) * 60, // Default to first preset
     timerId: null,
     wordsAtSprintStart: 0,  // Captured when sprint starts
     wordsNow: 0,            // Current word count (always updated)
@@ -57,7 +57,10 @@
     compactMode: settings.compactMode ?? true, // DEFAULT: Toolbar mode!
     position: settings.position || { top: 100, right: 12 },
     dailyGoal: settings.dailyGoal || 0,
-    todayWordsWritten: todayProgress.wordsWritten
+    todayWordsWritten: todayProgress.wordsWritten,
+    timerPreset1: settings.timerPreset1 || 15,
+    timerPreset2: settings.timerPreset2 || 20,
+    timerPreset3: settings.timerPreset3 || 30
   };
 
   // Inject root
@@ -299,13 +302,13 @@
           ${renderDailyGoal(state)}
 
           <div class="sw-row" id="sw-duration" style="gap: 6px; flex-wrap: wrap;">
-            <button class="sw-dur-btn ${state.durationSec===900?'active':''}" data-duration="900">15m</button>
-            <button class="sw-dur-btn ${state.durationSec===1200?'active':''}" data-duration="1200">20m</button>
-            <button class="sw-dur-btn ${state.durationSec===1800?'active':''}" data-duration="1800">30m</button>
-            <button class="sw-dur-btn ${![900,1200,1800].includes(state.durationSec)?'active':''}" id="sw-custom-btn">Custom</button>
+            <button class="sw-dur-btn ${state.durationSec===state.timerPreset1*60?'active':''}" data-duration="${state.timerPreset1*60}">${state.timerPreset1}m</button>
+            <button class="sw-dur-btn ${state.durationSec===state.timerPreset2*60?'active':''}" data-duration="${state.timerPreset2*60}">${state.timerPreset2}m</button>
+            <button class="sw-dur-btn ${state.durationSec===state.timerPreset3*60?'active':''}" data-duration="${state.timerPreset3*60}">${state.timerPreset3}m</button>
+            <button class="sw-dur-btn ${![state.timerPreset1*60,state.timerPreset2*60,state.timerPreset3*60].includes(state.durationSec)?'active':''}" id="sw-custom-btn">Custom</button>
           </div>
 
-          <div class="sw-row" id="sw-custom-input" style="${![900,1200,1800].includes(state.durationSec) ? '' : 'display:none;'} gap: 8px;">
+          <div class="sw-row" id="sw-custom-input" style="${![state.timerPreset1*60,state.timerPreset2*60,state.timerPreset3*60].includes(state.durationSec) ? '' : 'display:none;'} gap: 8px;">
             <input id="sw-custom" class="sw-number" type="number" min="1" max="180" step="1" value="${Math.round(state.durationSec/60)}" placeholder="Minutes" />
             <button id="sw-custom-set" class="sw-secondary">Set</button>
           </div>
@@ -1398,6 +1401,18 @@ Created by: ko-fi.com/thegoodman99`;
         const progress = await Storage.getTodayProgress();
         state.todayWordsWritten = progress.wordsWritten;
         // Re-render to show updated goal
+        root.innerHTML = render(state);
+        bindUI(root, state);
+      }
+
+      // Update timer presets
+      if (newSettings.timerPreset1 !== state.timerPreset1 ||
+          newSettings.timerPreset2 !== state.timerPreset2 ||
+          newSettings.timerPreset3 !== state.timerPreset3) {
+        state.timerPreset1 = newSettings.timerPreset1 || 15;
+        state.timerPreset2 = newSettings.timerPreset2 || 20;
+        state.timerPreset3 = newSettings.timerPreset3 || 30;
+        // Re-render to show updated timer buttons
         root.innerHTML = render(state);
         bindUI(root, state);
       }

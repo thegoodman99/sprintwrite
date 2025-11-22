@@ -218,6 +218,19 @@ h2 {
   padding-left: 4px;
 }
 
+.timer-presets-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 600px) {
+  .timer-presets-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .btn {
   padding: 12px 24px;
   border: none;
