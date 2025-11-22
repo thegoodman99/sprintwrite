@@ -1,18 +1,15 @@
 /* global Storage, Util */
 (async function() {
   const themeSel = document.getElementById('theme');
-  const saveTheme = document.getElementById('save-theme');
   const soundToggle = document.getElementById('sound-toggle');
   const celebrationToggle = document.getElementById('celebration-toggle');
   const minimizeOnStartToggle = document.getElementById('minimize-on-start-toggle');
   const displayMode = document.getElementById('display-mode');
-  const savePreferences = document.getElementById('save-preferences');
   const timerPreset1 = document.getElementById('timer-preset-1');
   const timerPreset2 = document.getElementById('timer-preset-2');
   const timerPreset3 = document.getElementById('timer-preset-3');
-  const saveTimerPresets = document.getElementById('save-timer-presets');
   const dailyGoalInput = document.getElementById('daily-goal');
-  const saveGoal = document.getElementById('save-goal');
+  const saveAllBtn = document.getElementById('save-all-settings');
   const todayProgress = document.getElementById('today-progress');
   const goalProgressText = document.getElementById('goal-progress-text');
   const goalBarFill = document.getElementById('goal-bar-fill');
@@ -76,66 +73,13 @@
     goalSprintsText.textContent = `${sprintsCompleted} sprint${sprintsCompleted !== 1 ? 's' : ''} completed today`;
   }
 
-  async function saveGoalNow() {
-    const s = await Storage.getSettings();
-    const goalValue = parseInt(dailyGoalInput.value, 10);
-
-    if (isNaN(goalValue) || goalValue < 0) {
-      showToast('Please enter a valid goal (0 or higher)', 'error');
-      return;
-    }
-
-    s.dailyGoal = goalValue;
-    await Storage.setSettings(s);
-    await updateGoalProgress();
-
-    if (goalValue === 0) {
-      showToast('Daily goal disabled');
-    } else {
-      showToast(`Daily goal set to ${goalValue.toLocaleString()} words!`);
-    }
-  }
-
-  async function saveThemeNow() {
-    const s = await Storage.getSettings();
-    s.theme = themeSel.value;
-    await Storage.setSettings(s);
-    
-    // Apply theme immediately
-    await loadTheme();
-    
-    // Notify content script to refresh
-    chrome.tabs.query({url: 'https://docs.google.com/document/*'}, (tabs) => {
-      tabs.forEach(tab => {
-        chrome.tabs.sendMessage(tab.id, {action: 'REFRESH_WIDGET'}).catch(() => {});
-      });
-    });
-    
-    showToast('Theme saved successfully!');
-  }
-
-  async function savePreferencesNow() {
-    const s = await Storage.getSettings();
-    s.sound = soundToggle.checked;
-    s.celebration = celebrationToggle.checked;
-    s.minimizeOnStart = minimizeOnStartToggle.checked;
-    s.compactMode = displayMode.value === 'toolbar';
-    await Storage.setSettings(s);
-
-    // Notify content script to refresh
-    chrome.tabs.query({url: 'https://docs.google.com/document/*'}, (tabs) => {
-      tabs.forEach(tab => {
-        chrome.tabs.sendMessage(tab.id, {action: 'REFRESH_WIDGET'}).catch(() => {});
-      });
-    });
-
-    showToast('Preferences saved successfully!');
-  }
-
-  async function saveTimerPresetsNow() {
+  /**
+   * Save all settings at once
+   */
+  async function saveAllSettings() {
     const s = await Storage.getSettings();
 
-    // Validate inputs
+    // Validate timer presets
     const preset1 = parseInt(timerPreset1.value, 10);
     const preset2 = parseInt(timerPreset2.value, 10);
     const preset3 = parseInt(timerPreset3.value, 10);
@@ -147,12 +91,47 @@
       return;
     }
 
+    // Validate daily goal
+    const goalValue = parseInt(dailyGoalInput.value, 10);
+    if (isNaN(goalValue) || goalValue < 0) {
+      showToast('Please enter a valid goal (0 or higher)', 'error');
+      return;
+    }
+
+    // Save theme
+    s.theme = themeSel.value;
+
+    // Save preferences
+    s.sound = soundToggle.checked;
+    s.celebration = celebrationToggle.checked;
+    s.minimizeOnStart = minimizeOnStartToggle.checked;
+    s.compactMode = displayMode.value === 'toolbar';
+
+    // Save timer presets
     s.timerPreset1 = preset1;
     s.timerPreset2 = preset2;
     s.timerPreset3 = preset3;
+
+    // Save daily goal
+    s.dailyGoal = goalValue;
+
+    // Save all settings at once
     await Storage.setSettings(s);
 
-    showToast('Timer presets saved successfully!');
+    // Apply theme to options page
+    await loadTheme();
+
+    // Update goal progress display
+    await updateGoalProgress();
+
+    // Notify content script to refresh (ONLY ONCE)
+    chrome.tabs.query({url: 'https://docs.google.com/document/*'}, (tabs) => {
+      tabs.forEach(tab => {
+        chrome.tabs.sendMessage(tab.id, {action: 'REFRESH_WIDGET'}).catch(() => {});
+      });
+    });
+
+    showToast('✅ All settings saved successfully!');
   }
 
   async function refreshHistory() {
@@ -299,10 +278,9 @@ Created by: ko-fi.com/thegoodman99`;
     }, 3000);
   }
 
-  saveTheme.onclick = saveThemeNow;
-  savePreferences.onclick = savePreferencesNow;
-  saveTimerPresets.onclick = saveTimerPresetsNow;
-  saveGoal.onclick = saveGoalNow;
+  // Single save button for all settings
+  saveAllBtn.onclick = saveAllSettings;
+
   shareBtn.onclick = shareStats;
   exportBtn.onclick = exportCsv;
   clearBtn.onclick = clearHistory;

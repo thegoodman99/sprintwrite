@@ -29,7 +29,6 @@
             <option value="midnight">🌃 Midnight</option>
           </select>
         </div>
-        <button id="save-theme" class="btn btn-primary">Save Theme</button>
       </section>
 
       <section class="card">
@@ -68,8 +67,6 @@
           </select>
           <p class="help-text">Toolbar mode stays in top-right corner, Float mode can be dragged anywhere. Changes apply automatically after saving.</p>
         </div>
-
-        <button id="save-preferences" class="btn btn-primary">Save Preferences</button>
       </section>
 
       <section class="card">
@@ -90,8 +87,6 @@
             <input type="number" id="timer-preset-3" class="form-control" min="1" max="180" value="30">
           </div>
         </div>
-
-        <button id="save-timer-presets" class="btn btn-primary">Save Timer Presets</button>
       </section>
 
       <section class="card">
@@ -114,8 +109,6 @@
           </div>
           <p class="goal-sprints" id="goal-sprints-text">0 sprints completed</p>
         </div>
-
-        <button id="save-goal" class="btn btn-primary">Save Goal</button>
       </section>
 
       <section class="card">
@@ -178,6 +171,16 @@
           </a>
         </div>
       </section>
+
+      <!-- Save All Settings Button -->
+      <div style="text-align: center; padding: 30px 20px;">
+        <button id="save-all-settings" class="btn btn-primary" style="font-size: 16px; padding: 14px 40px; min-width: 250px;">
+          💾 Save All Settings
+        </button>
+        <p class="help-text" style="margin-top: 12px; color: var(--muted);">
+          All changes will be applied automatically after saving
+        </p>
+      </div>
     </main>
   </div>
 
