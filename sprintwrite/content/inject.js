@@ -868,15 +868,33 @@
           }
           
           console.log('SprintWrite: Found checkbox, checked:', checkbox.checked);
-          
+
           if (!checkbox.checked) {
             console.log('SprintWrite: Clicking checkbox to enable word count...');
-            checkbox.click();
-            
+
+            // Try to find the Material Design wrapper div
+            const wrapper = checkbox.closest('.javascriptMaterialdesignGm3wizCheckbox-checkbox') ||
+                          checkbox.closest('[jscontroller]') ||
+                          checkbox.parentElement;
+
+            if (wrapper && wrapper !== checkbox) {
+              console.log('SprintWrite: Clicking wrapper element instead of checkbox input');
+              wrapper.click();
+            } else {
+              console.log('SprintWrite: Clicking checkbox input directly');
+              checkbox.click();
+            }
+
+            // Also dispatch a change event to ensure it registers
+            setTimeout(() => {
+              checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+              console.log('SprintWrite: Dispatched change event');
+            }, 50);
+
             // Double-check after a moment
             setTimeout(() => {
               console.log('SprintWrite: After click, checkbox.checked:', checkbox.checked);
-            }, 100);
+            }, 200);
           } else {
             console.log('SprintWrite: Checkbox already checked');
           }
