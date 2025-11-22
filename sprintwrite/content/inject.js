@@ -1453,75 +1453,45 @@ Created by: ko-fi.com/thegoodman99`;
     if (changes.settings) {
       console.log('SprintWrite: Settings detected, old:', changes.settings.oldValue, 'new:', changes.settings.newValue);
       const newSettings = changes.settings.newValue;
-      let needsRerender = false;
 
-      // Update theme
-      if (newSettings.theme !== state.theme) {
-        state.theme = newSettings.theme;
-        applyThemeClass(root, state.theme);
-        needsRerender = true;
-      }
+      // Update all state values from new settings
+      console.log('SprintWrite: Updating state from new settings...');
+      state.theme = newSettings.theme || 'light';
+      state.sound = newSettings.sound ?? true;
+      state.celebration = newSettings.celebration ?? true;
+      state.minimizeOnStart = newSettings.minimizeOnStart ?? false;
+      state.dailyGoal = newSettings.dailyGoal || 0;
+      state.timerPreset1 = newSettings.timerPreset1 || 15;
+      state.timerPreset2 = newSettings.timerPreset2 || 20;
+      state.timerPreset3 = newSettings.timerPreset3 || 30;
 
-      // Update sound
-      if (newSettings.sound !== state.sound) {
-        state.sound = newSettings.sound;
-        needsRerender = true;
-      }
+      // Apply theme class
+      applyThemeClass(root, state.theme);
 
-      // Update celebration
-      if (newSettings.celebration !== state.celebration) {
-        state.celebration = newSettings.celebration;
-        needsRerender = true;
-      }
-
-      // Update minimize on start
-      if (newSettings.minimizeOnStart !== state.minimizeOnStart) {
-        state.minimizeOnStart = newSettings.minimizeOnStart;
-        needsRerender = true;
-      }
-
-      // Update compact mode (toolbar vs float)
-      if (newSettings.compactMode !== state.compactMode) {
+      // Handle compact mode changes
+      if (newSettings.compactMode !== undefined && newSettings.compactMode !== state.compactMode) {
         state.compactMode = newSettings.compactMode;
-
-        // Toggle class and reposition
         if (state.compactMode) {
           root.classList.add('sw-compact');
           positionToolbarMode(root);
         } else {
           root.classList.remove('sw-compact');
-          // Restore saved position for float mode
           root.style.top = state.position.top + 'px';
           root.style.right = state.position.right + 'px';
         }
-        needsRerender = true;
       }
 
-      // Update daily goal
-      if (newSettings.dailyGoal !== state.dailyGoal) {
-        state.dailyGoal = newSettings.dailyGoal;
-        // Refresh today's progress
+      // Refresh daily goal progress
+      if (state.dailyGoal > 0) {
         const progress = await Storage.getTodayProgress();
         state.todayWordsWritten = progress.wordsWritten;
-        needsRerender = true;
       }
 
-      // Update timer presets
-      if (newSettings.timerPreset1 !== state.timerPreset1 ||
-          newSettings.timerPreset2 !== state.timerPreset2 ||
-          newSettings.timerPreset3 !== state.timerPreset3) {
-        state.timerPreset1 = newSettings.timerPreset1 || 15;
-        state.timerPreset2 = newSettings.timerPreset2 || 20;
-        state.timerPreset3 = newSettings.timerPreset3 || 30;
-        needsRerender = true;
-      }
-
-      // Re-render once if any setting changed
-      if (needsRerender) {
-        console.log('SprintWrite: Settings changed, updating widget...');
-        root.innerHTML = render(state);
-        bindUI(root, state);
-      }
+      // Always re-render when settings change
+      console.log('SprintWrite: Settings changed, re-rendering widget...');
+      console.log('SprintWrite: New state:', { sound: state.sound, theme: state.theme, celebration: state.celebration });
+      root.innerHTML = render(state);
+      bindUI(root, state);
     }
   });
 
