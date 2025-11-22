@@ -889,8 +889,8 @@
         
         console.log('SprintWrite: Clicking Word count...');
         wordCountItem.click();
-        
-        // Wait for dialog to open, then find and check the checkbox
+
+        // Wait longer for dialog to open, then find and check the checkbox
         setTimeout(() => {
           console.log('SprintWrite: Looking for checkbox in word count dialog...');
 
@@ -901,10 +901,15 @@
 
           for (const dialog of allDialogs) {
             const dialogText = dialog.textContent || '';
-            console.log('SprintWrite: Dialog text preview:', dialogText.substring(0, 100));
+            const dialogTextLower = dialogText.toLowerCase();
+            console.log('SprintWrite: Dialog text preview:', dialogText.substring(0, 200));
+            console.log('SprintWrite: Dialog aria-label:', dialog.getAttribute('aria-label'));
 
-            // Look for the dialog containing "word count" or "Display word count"
-            if (dialogText.toLowerCase().includes('word count') || dialogText.includes('Display word count')) {
+            // Look for the dialog containing "word count", "Display word count", or counting-related text
+            if (dialogTextLower.includes('word count') ||
+                dialogTextLower.includes('display word count') ||
+                dialogTextLower.includes('while typing') ||
+                (dialogText.includes('Words:') && dialogText.includes('Characters:'))) {
               wordCountDialog = dialog;
               console.log('SprintWrite: Found Word Count dialog!');
               break;
@@ -1038,8 +1043,8 @@
               }, 500);
             }
           }, 250);
-          
-        }, 500);
+
+        }, 1000);
         
       }, 400);
       
