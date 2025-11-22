@@ -60,7 +60,8 @@
     todayWordsWritten: todayProgress.wordsWritten,
     timerPreset1: settings.timerPreset1 || 15,
     timerPreset2: settings.timerPreset2 || 20,
-    timerPreset3: settings.timerPreset3 || 30
+    timerPreset3: settings.timerPreset3 || 30,
+    minimizeOnStart: settings.minimizeOnStart ?? false
   };
 
   // Inject root
@@ -283,58 +284,70 @@
           </div>
         </div>
 
-        <div class="sw-body" style="${state.minimized ? 'display:none' : ''}">
-          ${wordCountHelp}
-          
-          <div class="sw-row">
-            <div class="sw-time" id="sw-time" role="timer" aria-live="polite">${timeStr}</div>
-            <div class="sw-col" style="align-items:flex-end; gap: 4px;">
-              <div class="sw-mini" style="font-size: 14px;"><strong id="sw-words-total">${state.wordsNow}</strong> words</div>
-              <div class="sw-mini" style="color: var(--sw-success); font-weight: 600; font-size: 13px;"><strong id="sw-words-added">+${wordsAdded}</strong> added</div>
-              ${wpmDisplay}
+        <div class="sw-body" style="${state.minimized && !state.running ? 'display:none' : ''}">
+          ${state.minimized && state.running ? '' : wordCountHelp}
+
+          ${state.minimized && state.running ? `
+            <!-- Minimal sprint mode: only time and controls -->
+            <div class="sw-row" style="justify-content: center;">
+              <div class="sw-time" id="sw-time" role="timer" aria-live="polite" style="font-size: 28px;">${timeStr}</div>
             </div>
-          </div>
+            <div class="sw-row" style="gap: 10px;">
+              <button id="sw-start" class="sw-primary" style="flex: 2;" title="${startBtnText} sprint">${startBtnText}</button>
+              <button id="sw-reset" style="flex: 1;" title="Reset timer">Reset</button>
+            </div>
+          ` : `
+            <!-- Full widget view -->
+            <div class="sw-row">
+              <div class="sw-time" id="sw-time" role="timer" aria-live="polite">${timeStr}</div>
+              <div class="sw-col" style="align-items:flex-end; gap: 4px;">
+                <div class="sw-mini" style="font-size: 14px;"><strong id="sw-words-total">${state.wordsNow}</strong> words</div>
+                <div class="sw-mini" style="color: var(--sw-success); font-weight: 600; font-size: 13px;"><strong id="sw-words-added">+${wordsAdded}</strong> added</div>
+                ${wpmDisplay}
+              </div>
+            </div>
 
-          <div class="sw-progress-bar">
-            <div class="sw-progress-fill" id="sw-progress" style="width: 0%"></div>
-          </div>
+            <div class="sw-progress-bar">
+              <div class="sw-progress-fill" id="sw-progress" style="width: 0%"></div>
+            </div>
 
-          ${renderDailyGoal(state)}
+            ${renderDailyGoal(state)}
 
-          <div class="sw-row" id="sw-duration" style="gap: 6px; flex-wrap: wrap;">
-            <button class="sw-dur-btn ${state.durationSec===state.timerPreset1*60?'active':''}" data-duration="${state.timerPreset1*60}">${state.timerPreset1}m</button>
-            <button class="sw-dur-btn ${state.durationSec===state.timerPreset2*60?'active':''}" data-duration="${state.timerPreset2*60}">${state.timerPreset2}m</button>
-            <button class="sw-dur-btn ${state.durationSec===state.timerPreset3*60?'active':''}" data-duration="${state.timerPreset3*60}">${state.timerPreset3}m</button>
-            <button class="sw-dur-btn ${![state.timerPreset1*60,state.timerPreset2*60,state.timerPreset3*60].includes(state.durationSec)?'active':''}" id="sw-custom-btn">Custom</button>
-          </div>
+            <div class="sw-row" id="sw-duration" style="gap: 6px; flex-wrap: wrap;">
+              <button class="sw-dur-btn ${state.durationSec===state.timerPreset1*60?'active':''}" data-duration="${state.timerPreset1*60}">${state.timerPreset1}m</button>
+              <button class="sw-dur-btn ${state.durationSec===state.timerPreset2*60?'active':''}" data-duration="${state.timerPreset2*60}">${state.timerPreset2}m</button>
+              <button class="sw-dur-btn ${state.durationSec===state.timerPreset3*60?'active':''}" data-duration="${state.timerPreset3*60}">${state.timerPreset3}m</button>
+              <button class="sw-dur-btn ${![state.timerPreset1*60,state.timerPreset2*60,state.timerPreset3*60].includes(state.durationSec)?'active':''}" id="sw-custom-btn">Custom</button>
+            </div>
 
-          <div class="sw-row" id="sw-custom-input" style="${![state.timerPreset1*60,state.timerPreset2*60,state.timerPreset3*60].includes(state.durationSec) ? '' : 'display:none;'} gap: 8px;">
-            <input id="sw-custom" class="sw-number" type="number" min="1" max="180" step="1" value="${Math.round(state.durationSec/60)}" placeholder="Minutes" />
-            <button id="sw-custom-set" class="sw-secondary">Set</button>
-          </div>
+            <div class="sw-row" id="sw-custom-input" style="${![state.timerPreset1*60,state.timerPreset2*60,state.timerPreset3*60].includes(state.durationSec) ? '' : 'display:none;'} gap: 8px;">
+              <input id="sw-custom" class="sw-number" type="number" min="1" max="180" step="1" value="${Math.round(state.durationSec/60)}" placeholder="Minutes" />
+              <button id="sw-custom-set" class="sw-secondary">Set</button>
+            </div>
 
-          <div class="sw-row" style="gap: 10px;">
-            <button id="sw-start" class="sw-primary" style="flex: 2;" title="${startBtnText} sprint">${startBtnText}</button>
-            <button id="sw-reset" style="flex: 1;" title="Reset timer">Reset</button>
-          </div>
+            <div class="sw-row" style="gap: 10px;">
+              <button id="sw-start" class="sw-primary" style="flex: 2;" title="${startBtnText} sprint">${startBtnText}</button>
+              <button id="sw-reset" style="flex: 1;" title="Reset timer">Reset</button>
+            </div>
 
-          <div class="sw-row">
-            <label class="sw-mini">Theme:</label>
-            <select id="sw-theme" class="sw-select" aria-label="Select theme">
-              <option value="light" ${state.theme==='light'?'selected':''}>☀️ Light</option>
-              <option value="dark" ${state.theme==='dark'?'selected':''}>🌙 Dark</option>
-              <option value="nord" ${state.theme==='nord'?'selected':''}>❄️ Nord</option>
-              <option value="solar" ${state.theme==='solar'?'selected':''}>🌅 Solar</option>
-              <option value="midnight" ${state.theme==='midnight'?'selected':''}>🌃 Midnight</option>
-            </select>
-          </div>
+            <div class="sw-row">
+              <label class="sw-mini">Theme:</label>
+              <select id="sw-theme" class="sw-select" aria-label="Select theme">
+                <option value="light" ${state.theme==='light'?'selected':''}>☀️ Light</option>
+                <option value="dark" ${state.theme==='dark'?'selected':''}>🌙 Dark</option>
+                <option value="nord" ${state.theme==='nord'?'selected':''}>❄️ Nord</option>
+                <option value="solar" ${state.theme==='solar'?'selected':''}>🌅 Solar</option>
+                <option value="midnight" ${state.theme==='midnight'?'selected':''}>🌃 Midnight</option>
+              </select>
+            </div>
 
-          <div class="sw-row">
-            <label class="sw-mini">
-              <input type="checkbox" id="sw-sound" ${state.sound?'checked':''}/> 
-              Sound alerts
-            </label>
-          </div>
+            <div class="sw-row">
+              <label class="sw-mini">
+                <input type="checkbox" id="sw-sound" ${state.sound?'checked':''}/>
+                Sound alerts
+              </label>
+            </div>
+          `}
         </div>
       </div>
     `;
@@ -652,13 +665,21 @@
               timeDisplay.textContent = 'Starting in 2';
               setTimeout(() => {
                 timeDisplay.textContent = 'Starting in 1';
-                setTimeout(() => {
+                setTimeout(async () => {
                   // Now actually start the timer
                   state.running = true;
                   state.paused = false;
                   state.totalPausedTime = 0;
                   state.startEpoch = Date.now()/1000;
                   state.endEpoch = state.startEpoch + state.durationSec;
+
+                  // Auto-minimize if enabled
+                  if (state.minimizeOnStart && !state.minimized) {
+                    state.minimized = true;
+                    const s = await Storage.getSettings();
+                    s.minimized = true;
+                    await Storage.setSettings(s);
+                  }
 
                   root.innerHTML = render(state);
                   bindUI(root, state);

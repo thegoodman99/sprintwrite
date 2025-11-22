@@ -4,6 +4,7 @@
   const saveTheme = document.getElementById('save-theme');
   const soundToggle = document.getElementById('sound-toggle');
   const celebrationToggle = document.getElementById('celebration-toggle');
+  const minimizeOnStartToggle = document.getElementById('minimize-on-start-toggle');
   const savePreferences = document.getElementById('save-preferences');
   const timerPreset1 = document.getElementById('timer-preset-1');
   const timerPreset2 = document.getElementById('timer-preset-2');
@@ -37,6 +38,7 @@
     const s = await Storage.getSettings();
     soundToggle.checked = s.sound ?? true;
     celebrationToggle.checked = s.celebration ?? true;
+    minimizeOnStartToggle.checked = s.minimizeOnStart ?? false;
   }
 
   async function loadTimerPresets() {
@@ -114,6 +116,7 @@
     const s = await Storage.getSettings();
     s.sound = soundToggle.checked;
     s.celebration = celebrationToggle.checked;
+    s.minimizeOnStart = minimizeOnStartToggle.checked;
     await Storage.setSettings(s);
 
     // Notify content script to refresh

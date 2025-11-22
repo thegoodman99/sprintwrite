@@ -22,7 +22,8 @@ const Storage = {
       dailyGoal: 0, // Daily word count goal (0 = disabled)
       timerPreset1: 15, // First timer preset in minutes
       timerPreset2: 20, // Second timer preset in minutes
-      timerPreset3: 30  // Third timer preset in minutes
+      timerPreset3: 30, // Third timer preset in minutes
+      minimizeOnStart: false // Auto-minimize widget when sprint starts
     };
     const saved = await Storage.get(SW_KEYS.SETTINGS);
     return { ...def, ...(saved || {}) };
