@@ -1585,6 +1585,55 @@ Created by: ko-fi.com/thegoodman99`;
     }
   });
 
+  // Listen for messages from options page
+  chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+    console.log('SprintWrite: Received message:', message);
+
+    if (message.action === 'REFRESH_WIDGET') {
+      console.log('SprintWrite: Refresh widget requested from options page');
+
+      // Reload settings from storage
+      const s = await Storage.getSettings();
+      state.theme = s.theme || 'light';
+      state.sound = s.sound ?? true;
+      state.celebration = s.celebration ?? true;
+      state.minimizeOnStart = s.minimizeOnStart ?? false;
+      state.dailyGoal = s.dailyGoal || 0;
+      state.timerPreset1 = s.timerPreset1 || 15;
+      state.timerPreset2 = s.timerPreset2 || 20;
+      state.timerPreset3 = s.timerPreset3 || 30;
+      state.compactMode = s.compactMode ?? true;
+
+      // Apply theme
+      applyThemeClass(root, state.theme);
+
+      // Refresh daily goal progress
+      if (state.dailyGoal > 0) {
+        const progress = await Storage.getTodayProgress();
+        state.todayWordsWritten = progress.wordsWritten;
+      }
+
+      // Reposition if in toolbar mode
+      if (state.compactMode) {
+        root.classList.add('sw-compact');
+        positionToolbarMode(root);
+      } else {
+        root.classList.remove('sw-compact');
+        root.style.top = state.position.top + 'px';
+        root.style.right = state.position.right + 'px';
+      }
+
+      // Re-render
+      root.innerHTML = render(state);
+      bindUI(root, state);
+
+      console.log('SprintWrite: Widget refreshed from options page message');
+      sendResponse({ success: true });
+    }
+
+    return true; // Keep message channel open for async response
+  });
+
   // Cleanup on page unload
   window.addEventListener('unload', () => {
     clearInterval(wordCountInterval);
