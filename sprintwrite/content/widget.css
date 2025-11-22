@@ -143,6 +143,27 @@
   color: var(--sw-fg);
 }
 
+#sw-root .sw-refresh {
+  background: transparent;
+  border: none;
+  color: var(--sw-muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: transform 0.3s ease, background 0.2s, color 0.2s;
+  transform: rotate(0deg);
+}
+
+#sw-root .sw-refresh:hover {
+  background: var(--sw-bg);
+  color: var(--sw-accent);
+}
+
+#sw-root .sw-refresh:active {
+  transform: rotate(90deg);
+}
+
 #sw-root .sw-badge {
   font-size: 10px;
   font-weight: 600;

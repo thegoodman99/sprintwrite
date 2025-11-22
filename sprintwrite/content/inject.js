@@ -273,6 +273,7 @@
                  style="height: ${state.compactMode ? '20px' : '24px'}; width: auto; display: block;">
           </div>
           <button class="sw-minimize" title="${minimizeLabel}" aria-label="${minimizeLabel} widget">${minimizeIcon}</button>
+          <button class="sw-refresh" id="sw-refresh" title="Refresh widget" aria-label="Refresh widget">🔄</button>
           <div class="sw-menu" id="sw-menu" role="button" aria-label="Menu" tabindex="0">⋮</div>
           <div class="sw-menu-panel" id="sw-menu-panel" role="menu">
             <a href="#" id="sw-toggle-compact" role="menuitem">📍 ${state.compactMode ? 'Float Mode' : 'Toolbar Mode'}</a>
@@ -396,6 +397,58 @@
         await Storage.setSettings(s);
         root.innerHTML = render(state);
         bindUI(root, state);
+      };
+    }
+
+    // Refresh button
+    const refreshBtn = root.querySelector('#sw-refresh');
+    if (refreshBtn) {
+      refreshBtn.onclick = async () => {
+        console.log('SprintWrite: Refreshing widget...');
+
+        // Reload settings from storage
+        const s = await Storage.getSettings();
+        state.theme = s.theme || 'light';
+        state.sound = s.sound ?? true;
+        state.celebration = s.celebration ?? true;
+        state.minimizeOnStart = s.minimizeOnStart ?? false;
+        state.dailyGoal = s.dailyGoal || 0;
+        state.timerPreset1 = s.timerPreset1 || 15;
+        state.timerPreset2 = s.timerPreset2 || 20;
+        state.timerPreset3 = s.timerPreset3 || 30;
+        state.compactMode = s.compactMode ?? true;
+
+        // Apply theme
+        applyThemeClass(root, state.theme);
+
+        // Refresh daily goal progress
+        if (state.dailyGoal > 0) {
+          const progress = await Storage.getTodayProgress();
+          state.todayWordsWritten = progress.wordsWritten;
+        }
+
+        // Reposition if in toolbar mode
+        if (state.compactMode) {
+          root.classList.add('sw-compact');
+          positionToolbarMode(root);
+        } else {
+          root.classList.remove('sw-compact');
+          root.style.top = state.position.top + 'px';
+          root.style.right = state.position.right + 'px';
+        }
+
+        // Re-render
+        root.innerHTML = render(state);
+        bindUI(root, state);
+
+        console.log('SprintWrite: Widget refreshed successfully!');
+
+        // Show brief visual feedback
+        refreshBtn.style.transform = 'rotate(360deg)';
+        setTimeout(() => {
+          const btn = root.querySelector('#sw-refresh');
+          if (btn) btn.style.transform = 'rotate(0deg)';
+        }, 300);
       };
     }
 
