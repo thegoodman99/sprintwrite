@@ -1398,26 +1398,31 @@ Created by: ko-fi.com/thegoodman99`;
     // Update settings in real-time
     if (changes.settings) {
       const newSettings = changes.settings.newValue;
+      let needsRerender = false;
 
       // Update theme
       if (newSettings.theme !== state.theme) {
         state.theme = newSettings.theme;
         applyThemeClass(root, state.theme);
+        needsRerender = true;
       }
 
       // Update sound
       if (newSettings.sound !== state.sound) {
         state.sound = newSettings.sound;
+        needsRerender = true;
       }
 
       // Update celebration
       if (newSettings.celebration !== state.celebration) {
         state.celebration = newSettings.celebration;
+        needsRerender = true;
       }
 
       // Update minimize on start
       if (newSettings.minimizeOnStart !== state.minimizeOnStart) {
         state.minimizeOnStart = newSettings.minimizeOnStart;
+        needsRerender = true;
       }
 
       // Update daily goal
@@ -1426,9 +1431,7 @@ Created by: ko-fi.com/thegoodman99`;
         // Refresh today's progress
         const progress = await Storage.getTodayProgress();
         state.todayWordsWritten = progress.wordsWritten;
-        // Re-render to show updated goal
-        root.innerHTML = render(state);
-        bindUI(root, state);
+        needsRerender = true;
       }
 
       // Update timer presets
@@ -1438,7 +1441,12 @@ Created by: ko-fi.com/thegoodman99`;
         state.timerPreset1 = newSettings.timerPreset1 || 15;
         state.timerPreset2 = newSettings.timerPreset2 || 20;
         state.timerPreset3 = newSettings.timerPreset3 || 30;
-        // Re-render to show updated timer buttons
+        needsRerender = true;
+      }
+
+      // Re-render once if any setting changed
+      if (needsRerender) {
+        console.log('SprintWrite: Settings changed, updating widget...');
         root.innerHTML = render(state);
         bindUI(root, state);
       }
