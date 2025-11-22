@@ -15,9 +15,9 @@
       
       if (!wordCountWidget) {
         console.log('SprintWrite: Word count not visible, attempting to show it...');
-        // Automatically trigger the keyboard shortcut after a delay
-        setTimeout(() => {
-          showWordCount();
+        // Automatically trigger with retry logic after a delay
+        setTimeout(async () => {
+          await showWordCountWithRetry();
         }, 500);
         return false;
       } else {
@@ -1056,7 +1056,35 @@
       return false;
     }
   }
-  
+
+  /**
+   * Retry wrapper for showWordCount with exponential backoff
+   * @param {number} maxAttempts - Maximum number of attempts (default: 2)
+   * @returns {Promise<boolean>} True if word count was successfully enabled
+   */
+  async function showWordCountWithRetry(maxAttempts = 2) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      console.log(`SprintWrite: Word count automation attempt ${attempt}/${maxAttempts}`);
+
+      const success = await showWordCount();
+      if (success) {
+        console.log('SprintWrite: Word count successfully enabled!');
+        return true;
+      }
+
+      // If not the last attempt, wait before retrying
+      if (attempt < maxAttempts) {
+        const delay = attempt * 1000; // 1s, 2s, etc.
+        console.log(`SprintWrite: Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+
+    console.log('SprintWrite: Failed to enable word count after all attempts');
+    showManualInstructions();
+    return false;
+  }
+
   function showManualInstructions() {
     // Instructions now shown inline in widget
     console.log('SprintWrite: Please enable word count manually via Tools → Word count');
