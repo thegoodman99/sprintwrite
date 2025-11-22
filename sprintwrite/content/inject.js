@@ -1449,6 +1449,23 @@ Created by: ko-fi.com/thegoodman99`;
         needsRerender = true;
       }
 
+      // Update compact mode (toolbar vs float)
+      if (newSettings.compactMode !== state.compactMode) {
+        state.compactMode = newSettings.compactMode;
+
+        // Toggle class and reposition
+        if (state.compactMode) {
+          root.classList.add('sw-compact');
+          positionToolbarMode(root);
+        } else {
+          root.classList.remove('sw-compact');
+          // Restore saved position for float mode
+          root.style.top = state.position.top + 'px';
+          root.style.right = state.position.right + 'px';
+        }
+        needsRerender = true;
+      }
+
       // Update daily goal
       if (newSettings.dailyGoal !== state.dailyGoal) {
         state.dailyGoal = newSettings.dailyGoal;
