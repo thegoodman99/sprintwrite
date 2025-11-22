@@ -5,6 +5,7 @@
   const soundToggle = document.getElementById('sound-toggle');
   const celebrationToggle = document.getElementById('celebration-toggle');
   const minimizeOnStartToggle = document.getElementById('minimize-on-start-toggle');
+  const displayMode = document.getElementById('display-mode');
   const savePreferences = document.getElementById('save-preferences');
   const timerPreset1 = document.getElementById('timer-preset-1');
   const timerPreset2 = document.getElementById('timer-preset-2');
@@ -39,6 +40,7 @@
     soundToggle.checked = s.sound ?? true;
     celebrationToggle.checked = s.celebration ?? true;
     minimizeOnStartToggle.checked = s.minimizeOnStart ?? false;
+    displayMode.value = (s.compactMode ?? true) ? 'toolbar' : 'float';
   }
 
   async function loadTimerPresets() {
@@ -117,6 +119,7 @@
     s.sound = soundToggle.checked;
     s.celebration = celebrationToggle.checked;
     s.minimizeOnStart = minimizeOnStartToggle.checked;
+    s.compactMode = displayMode.value === 'toolbar';
     await Storage.setSettings(s);
 
     // Notify content script to refresh
