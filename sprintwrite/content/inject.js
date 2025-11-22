@@ -1393,10 +1393,16 @@ Created by: ko-fi.com/thegoodman99`;
 
   // Listen for real-time settings changes from options page
   chrome.storage.onChanged.addListener(async (changes, areaName) => {
-    if (areaName !== 'sync') return;
+    console.log('SprintWrite: Storage changed!', 'Area:', areaName, 'Changes:', changes);
+
+    if (areaName !== 'sync') {
+      console.log('SprintWrite: Ignoring non-sync storage change');
+      return;
+    }
 
     // Update settings in real-time
     if (changes.settings) {
+      console.log('SprintWrite: Settings detected, old:', changes.settings.oldValue, 'new:', changes.settings.newValue);
       const newSettings = changes.settings.newValue;
       let needsRerender = false;
 
