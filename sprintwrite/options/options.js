@@ -149,7 +149,7 @@
     s.timerPreset3 = preset3;
     await Storage.setSettings(s);
 
-    showToast('Timer presets saved! Reload your Google Docs to see changes.');
+    showToast('Timer presets saved successfully!');
   }
 
   async function refreshHistory() {

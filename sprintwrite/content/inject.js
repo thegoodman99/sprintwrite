@@ -1415,6 +1415,11 @@ Created by: ko-fi.com/thegoodman99`;
         state.celebration = newSettings.celebration;
       }
 
+      // Update minimize on start
+      if (newSettings.minimizeOnStart !== state.minimizeOnStart) {
+        state.minimizeOnStart = newSettings.minimizeOnStart;
+      }
+
       // Update daily goal
       if (newSettings.dailyGoal !== state.dailyGoal) {
         state.dailyGoal = newSettings.dailyGoal;
