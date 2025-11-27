@@ -175,9 +175,9 @@
 }
 
 #sw-root .sw-body {
-  padding: 14px;
+  padding: 12px;
   display: grid;
-  gap: 12px;
+  gap: 10px;
   overflow-x: visible; /* Prevent horizontal cutoff */
 }
 
@@ -195,6 +195,23 @@
 #sw-root .sw-help-message strong {
   font-weight: 700;
   color: #533f03;
+}
+
+#sw-root .sw-compact-notice {
+  background: rgba(255, 193, 7, 0.1);
+  color: var(--sw-fg);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  line-height: 1.4;
+  border-left: 3px solid rgba(255, 193, 7, 0.6);
+  margin: -2px 0 8px 0;
+  opacity: 0.85;
+  cursor: help;
+}
+
+#sw-root .sw-compact-notice strong {
+  font-weight: 600;
 }
 
 #sw-root .sw-row { 
@@ -636,25 +653,25 @@
   font-weight: 600;
 }
 
-/* Daily Goal Widget Styles */
+/* Writing Goal Widget Styles */
 #sw-root .sw-daily-goal {
   background: var(--sw-panel);
   border: 1px solid var(--sw-border);
-  border-radius: 10px;
-  padding: 12px;
-  margin: 12px 0;
+  border-radius: 8px;
+  padding: 10px;
+  margin: 0;
 }
 
 #sw-root .sw-goal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 #sw-root .sw-goal-bar {
   width: 100%;
-  height: 8px;
+  height: 6px;
   background: rgba(0,0,0,0.1);
   border-radius: 999px;
   overflow: hidden;

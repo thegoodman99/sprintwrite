@@ -10,7 +10,7 @@
   <div class="container">
     <header>
       <div style="text-align: center; margin-bottom: 16px;">
-        <img src="../icons/logo_with_title_512px.png" alt="SprintWrite" style="max-width: 300px; height: auto;">
+        <img src="../icons/logo_512px.png" alt="SprintWrite" style="max-width: 300px; height: auto;">
       </div>
       <h1>⚙️ Settings</h1>
       <p class="subtitle">Customize your writing sprint experience</p>
@@ -18,27 +18,27 @@
 
     <main>
       <section class="card">
-        <h2>🎨 Theme Settings</h2>
+        <h2>Theme Settings</h2>
         <div class="form-group">
           <label for="theme">Color Theme</label>
           <select id="theme" class="form-control">
-            <option value="light">☀️ Light</option>
-            <option value="dark">🌙 Dark</option>
-            <option value="nord">❄️ Nord</option>
-            <option value="solar">🌅 Solarized</option>
-            <option value="midnight">🌃 Midnight</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+            <option value="nord">Nord</option>
+            <option value="solar">Solarized</option>
+            <option value="midnight">Midnight</option>
           </select>
         </div>
       </section>
 
       <section class="card">
-        <h2>⚙️ Preferences</h2>
+        <h2>Preferences</h2>
         <p class="muted">Customize your sprint experience</p>
         
         <div class="form-group">
           <label class="checkbox-label">
             <input type="checkbox" id="sound-toggle" checked>
-            <span>🔊 Sound Effects</span>
+            <span>Sound Effects</span>
           </label>
           <p class="help-text">Play sound when sprint completes</p>
         </div>
@@ -46,7 +46,7 @@
         <div class="form-group">
           <label class="checkbox-label">
             <input type="checkbox" id="celebration-toggle" checked>
-            <span>🎉 Celebration Screen</span>
+            <span>Celebration Screen</span>
           </label>
           <p class="help-text">Show celebration overlay when sprint completes</p>
         </div>
@@ -54,7 +54,7 @@
         <div class="form-group">
           <label class="checkbox-label">
             <input type="checkbox" id="minimize-on-start-toggle">
-            <span>📉 Minimize on Start</span>
+            <span>Minimize on Start</span>
           </label>
           <p class="help-text">Automatically minimize widget when sprint starts for distraction-free writing</p>
         </div>
@@ -62,15 +62,15 @@
         <div class="form-group">
           <label for="display-mode">Widget Position</label>
           <select id="display-mode" class="form-control">
-            <option value="toolbar">📍 Toolbar Mode (fixed top-right)</option>
-            <option value="float">🎈 Float Mode (draggable)</option>
+            <option value="toolbar">Toolbar Mode (fixed top-right)</option>
+            <option value="float">Float Mode (draggable)</option>
           </select>
           <p class="help-text">Toolbar mode stays in top-right corner, Float mode can be dragged anywhere. Changes apply automatically after saving.</p>
         </div>
       </section>
 
       <section class="card">
-        <h2>⏱️ Timer Presets</h2>
+        <h2>Timer Presets</h2>
         <p class="muted">Customize your quick timer buttons (in minutes)</p>
 
         <div class="timer-presets-grid">
@@ -90,7 +90,7 @@
       </section>
 
       <section class="card">
-        <h2>🎯 Daily Goal</h2>
+        <h2>Writing Goal</h2>
         <p class="muted">Set a daily word count target to track your progress</p>
 
         <div class="form-group">
@@ -102,7 +102,10 @@
         <div id="today-progress" class="goal-progress" style="display: none;">
           <div class="goal-header">
             <span>Today's Progress</span>
-            <span id="goal-progress-text">0 / 0 words</span>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span id="goal-progress-text">0 / 0 words</span>
+              <button id="refresh-goal" class="btn-icon" title="Refresh progress">🔄</button>
+            </div>
           </div>
           <div class="goal-bar">
             <div id="goal-bar-fill" class="goal-bar-fill"></div>
@@ -112,7 +115,7 @@
       </section>
 
       <section class="card">
-        <h2>📊 Statistics & History</h2>
+        <h2>Statistics & History</h2>
         <p class="muted">Track your writing progress over time</p>
         
         <!-- Statistics Summary -->
@@ -134,12 +137,20 @@
             <div class="stat-label">Avg Words/Min</div>
           </div>
         </div>
-        
+
+        <!-- Insights Section -->
+        <div id="insights-section" style="display: none; margin: 24px 0; padding: 20px; background: linear-gradient(135deg, #4aa1d8 0%, #2a7fb0 100%); border-radius: 12px; color: white;">
+          <h3 style="margin: 0 0 16px 0; font-size: 18px;">Your Writing Insights</h3>
+          <div id="insights-content" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; font-size: 14px;">
+            <!-- Insights will be populated here -->
+          </div>
+        </div>
+
         <div class="history-controls">
-          <button id="refresh" class="btn btn-secondary">🔄 Refresh</button>
-          <button id="share-stats" class="btn btn-secondary">📤 Share Stats</button>
-          <button id="export" class="btn btn-secondary">📥 Export Data</button>
-          <button id="clear-history" class="btn btn-danger">🗑️ Clear History</button>
+          <button id="refresh" class="btn btn-secondary">Refresh</button>
+          <button id="share-stats" class="btn btn-secondary">Share Stats</button>
+          <button id="export" class="btn btn-secondary">Export Data</button>
+          <button id="clear-history" class="btn btn-danger">Clear History</button>
         </div>
 
         <div class="table-container">
@@ -155,11 +166,14 @@
             <tbody></tbody>
           </table>
           <p id="hist-empty" class="empty-message">Loading history...</p>
+          <div style="text-align: center; margin-top: 16px;">
+            <button id="load-more" class="btn btn-secondary" style="display: none;">Load More</button>
+          </div>
         </div>
       </section>
 
       <section class="card">
-        <h2>ℹ️ About</h2>
+        <h2>About</h2>
         <p class="about-text">
           SprintWrite helps writers stay focused and productive with timed writing sprints.
           Track your progress and build better writing habits - completely free!
@@ -167,17 +181,17 @@
         <div class="version">Version 2.4.0</div>
         <div class="links">
           <a href="https://ko-fi.com/thegoodman99" target="_blank" class="support-link">
-            ☕ Support the Creator
+            Support the Creator
           </a>
         </div>
       </section>
 
       <!-- Save All Settings Button -->
-      <div style="text-align: center; padding: 30px 20px;">
-        <button id="save-all-settings" class="btn btn-primary" style="font-size: 16px; padding: 14px 40px; min-width: 250px;">
-          💾 Save All Settings
+      <div class="save-container">
+        <button id="save-all-settings" class="btn btn-primary">
+          Save All Settings
         </button>
-        <p class="help-text" style="margin-top: 12px; color: var(--muted);">
+        <p class="help-text">
           All changes will be applied automatically after saving
         </p>
       </div>

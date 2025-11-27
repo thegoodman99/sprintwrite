@@ -6,13 +6,24 @@ const SW_KEYS = {
 
 const Storage = {
   async get(key, area = 'sync') {
-    const api = chrome.storage[area] || chrome.storage.sync;
-    const res = await api.get(key);
-    return res[key];
+    try {
+      const api = chrome.storage[area] || chrome.storage.sync;
+      const res = await api.get(key);
+      return res[key];
+    } catch (error) {
+      // Silently fail if extension context is invalid (rare in production)
+      console.warn('Storage get failed:', error.message);
+      return undefined;
+    }
   },
   async set(key, value, area = 'sync') {
-    const api = chrome.storage[area] || chrome.storage.sync;
-    await api.set({ [key]: value });
+    try {
+      const api = chrome.storage[area] || chrome.storage.sync;
+      await api.set({ [key]: value });
+    } catch (error) {
+      // Silently fail if extension context is invalid (rare in production)
+      console.warn('Storage set failed:', error.message);
+    }
   },
   async getSettings() {
     const def = {

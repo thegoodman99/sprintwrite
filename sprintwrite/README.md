@@ -2,7 +2,7 @@
 
 A completely **FREE** Chrome extension that helps writers stay productive with timed writing sprints, real-time word tracking, and detailed statistics.
 
-![Version](https://img.shields.io/badge/version-2.3.0-blue)
+![Version](https://img.shields.io/badge/version-2.4.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## Features
@@ -25,7 +25,7 @@ A completely **FREE** Chrome extension that helps writers stay productive with t
 - ⏸️ **Pause & Resume** - Take breaks without losing your progress
 - 🚫 **Navigation Protection** - Warns before leaving page during active sprint
 - 🔄 **Cross-Device Sync** - Settings and history sync via Chrome Sync Storage
-- 🎯 **Auto Word Count** - Attempts to automatically enable Google Docs word count
+- ⚙️ **Minimal Mode** - Smart minimized view with controls during active sprints
 
 ## Installation
 
@@ -199,7 +199,17 @@ MIT License - feel free to use, modify, and distribute.
 
 ## Changelog
 
-### Version 2.3.0 (Current)
+### Version 2.4.0 (Current)
+- 🏗️ **Code Architecture** - Refactored into modular architecture (8 focused modules)
+- 🎨 **UI/UX Improvements** - Completely redesigned options page with modern aesthetics
+- 🖼️ **New Logos** - Updated with high-resolution logos (256px, 512px, 1024px)
+- ⏱️ **Sprint Start** - Added 3-second countdown before timer starts
+- 📦 **Minimal Mode** - Enhanced smart minimal mode that persists during sprints
+- 🧹 **Production Ready** - Removed all debug logging and unused code
+- ⚡ **Performance** - Simplified word count detection (now only checks visibility)
+- 🔧 **Code Quality** - Reduced codebase by ~280 lines through cleanup
+
+### Version 2.3.0
 - Added document title tracking to history
 - Improved word count detection reliability
 - Added 5 theme options

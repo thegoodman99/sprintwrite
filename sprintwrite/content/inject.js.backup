@@ -1,0 +1,1630 @@
+/* global Storage, Util */
+
+(async function init() {
+  if (window.__SW_INJECTED__) return;
+  window.__SW_INJECTED__ = true;
+
+  // Only on Google Docs
+  if (!/https:\/\/docs\.google\.com\/document\//.test(location.href)) return;
+
+  // Ensure Google Docs word count is visible
+  function ensureWordCountVisible() {
+    try {
+      // Check if word count is currently visible - using correct selector
+      const wordCountWidget = document.querySelector('.kix-documentmetrics-widget-number');
+      
+      if (!wordCountWidget) {
+        console.log('SprintWrite: Word count not visible, attempting to show it...');
+        // Automatically trigger with retry logic after a delay
+        setTimeout(async () => {
+          await showWordCountWithRetry();
+        }, 500);
+        return false;
+      } else {
+        console.log('SprintWrite: Word count is already visible');
+        return true;
+      }
+    } catch (e) {
+      console.log('SprintWrite: Could not check word count visibility:', e);
+      return false;
+    }
+  }
+
+  // Try to ensure word count is visible after page loads
+  setTimeout(() => {
+    ensureWordCountVisible();
+  }, 2000); // Wait 2 seconds for Google Docs to fully load
+
+  const settings = await Storage.getSettings();
+  const todayProgress = await Storage.getTodayProgress();
+
+  const state = {
+    running: false,
+    paused: false,
+    startEpoch: 0,
+    endEpoch: 0,
+    pausedAt: 0,
+    totalPausedTime: 0,
+    durationSec: (settings.timerPreset1 || 15) * 60, // Default to first preset
+    timerId: null,
+    wordsAtSprintStart: 0,  // Captured when sprint starts
+    wordsNow: 0,            // Current word count (always updated)
+    wordsPerMinute: 0,      // Calculated at end
+    theme: settings.theme || 'light',
+    sound: settings.sound ?? true,
+    celebration: settings.celebration ?? true, // DEFAULT: Show celebrations!
+    minimized: settings.minimized ?? true, // DEFAULT: Minimized on load!
+    compactMode: settings.compactMode ?? true, // DEFAULT: Toolbar mode!
+    position: settings.position || { top: 100, right: 12 },
+    dailyGoal: settings.dailyGoal || 0,
+    todayWordsWritten: todayProgress.wordsWritten,
+    timerPreset1: settings.timerPreset1 || 15,
+    timerPreset2: settings.timerPreset2 || 20,
+    timerPreset3: settings.timerPreset3 || 30,
+    minimizeOnStart: settings.minimizeOnStart ?? false
+  };
+
+  // Inject root
+  const root = document.createElement('div');
+  root.id = 'sw-root';
+  root.style.top = state.position.top + 'px';
+  root.style.right = state.position.right + 'px';
+  if (state.compactMode) {
+    root.classList.add('sw-compact');
+    positionToolbarMode(root);
+  }
+  applyThemeClass(root, state.theme);
+  document.documentElement.appendChild(root);
+
+  root.innerHTML = render(state);
+  bindUI(root, state);
+  makeDraggable(root, state);
+
+  function applyThemeClass(el, theme) {
+    el.classList.remove('sw-theme-dark','sw-theme-nord','sw-theme-solar','sw-theme-midnight');
+    if (theme === 'dark') el.classList.add('sw-theme-dark');
+    if (theme === 'nord') el.classList.add('sw-theme-nord');
+    if (theme === 'solar') el.classList.add('sw-theme-solar');
+    if (theme === 'midnight') el.classList.add('sw-theme-midnight');
+  }
+
+  function positionToolbarMode(root, retries = 0) {
+    // Position toolbar mode to the left of the revision history button
+    const revisionButton = document.querySelector('#docs-revisions-appbarbutton');
+    if (revisionButton) {
+      const rect = revisionButton.getBoundingClientRect();
+
+      // Check if button is actually positioned (not still loading)
+      // If rect.left is very small, button hasn't been positioned yet by Google Docs
+      if (rect.left > 100 && rect.left < window.innerWidth - 100) {
+        // Calculate distance from right edge: total width - button position + gap
+        const rightOffset = window.innerWidth - rect.left + 8; // 8px gap to the left of button
+        root.style.right = rightOffset + 'px';
+        root.style.top = '8px';
+        console.log('SprintWrite: Positioned in toolbar mode at', rightOffset + 'px from right');
+      } else if (retries < 20) {
+        // Button found but not properly positioned yet, retry
+        setTimeout(() => positionToolbarMode(root, retries + 1), 250);
+        console.log('SprintWrite: Button found but not positioned yet... (attempt', retries + 1, ')');
+      } else {
+        // Use fallback after too many retries
+        root.style.right = '80px';
+        root.style.top = '8px';
+        console.log('SprintWrite: Using fallback toolbar position');
+      }
+    } else if (retries < 20) {
+      // Element not ready yet, retry after a short delay
+      setTimeout(() => positionToolbarMode(root, retries + 1), 250);
+      console.log('SprintWrite: Waiting for Google Docs toolbar... (attempt', retries + 1, ')');
+    } else {
+      // Fallback position if element never loads
+      root.style.right = '80px';
+      root.style.top = '8px';
+      console.log('SprintWrite: Using fallback toolbar position');
+    }
+  }
+
+  function makeDraggable(root, state) {
+    const card = root.querySelector('.sw-card');
+    const header = root.querySelector('.sw-header-title');
+    if (!card || !header) return;
+    
+    let isDragging = false;
+    let startX, startY, startTop, startRight;
+
+    // Enable dragging in float mode only
+    const updateDragEnabled = () => {
+      if (state.compactMode) {
+        header.style.cursor = 'default';
+        header.removeAttribute('title');
+      } else {
+        header.style.cursor = 'move';
+        header.setAttribute('title', 'Drag to reposition');
+      }
+    };
+    
+    updateDragEnabled();
+
+    header.addEventListener('mousedown', (e) => {
+      // Don't drag in compact mode
+      if (state.compactMode) return;
+      // Don't drag if clicking on buttons or logo
+      if (e.target.closest('.sw-menu') || e.target.closest('.sw-minimize') || e.target.closest('.sw-logo')) return;
+
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      
+      // Get current position
+      const rect = root.getBoundingClientRect();
+      startTop = rect.top;
+      startRight = window.innerWidth - rect.right;
+      
+      card.style.transition = 'none';
+      e.preventDefault();
+      e.stopPropagation();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging || state.compactMode) return;
+      
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+      
+      // Calculate new position with bounds checking
+      const newTop = Math.max(0, Math.min(window.innerHeight - 100, startTop + deltaY));
+      const newRight = Math.max(0, Math.min(window.innerWidth - 200, startRight - deltaX));
+      
+      root.style.top = newTop + 'px';
+      root.style.right = newRight + 'px';
+    });
+
+    document.addEventListener('mouseup', async () => {
+      if (isDragging && !state.compactMode) {
+        isDragging = false;
+        card.style.transition = '';
+        
+        // Save position
+        state.position = {
+          top: parseInt(root.style.top) || 0,
+          right: parseInt(root.style.right) || 0
+        };
+        
+        const s = await Storage.getSettings();
+        s.position = state.position;
+        await Storage.setSettings(s);
+      }
+    });
+  }
+
+  function renderDailyGoal(state) {
+    if (!state.dailyGoal || state.dailyGoal === 0) {
+      return '';
+    }
+
+    const wordsWritten = state.todayWordsWritten;
+    const percentage = Math.min(100, (wordsWritten / state.dailyGoal) * 100);
+    const remaining = Math.max(0, state.dailyGoal - wordsWritten);
+
+    return `
+      <div class="sw-daily-goal">
+        <div class="sw-goal-header">
+          <span class="sw-mini">🎯 Writing Goal</span>
+          <span class="sw-mini" style="color: var(--sw-accent); font-weight: 600;">${wordsWritten.toLocaleString()} / ${state.dailyGoal.toLocaleString()}</span>
+        </div>
+        <div class="sw-goal-bar">
+          <div class="sw-goal-fill" style="width: ${percentage}%"></div>
+        </div>
+        <div class="sw-mini" style="text-align: center; color: var(--sw-text-secondary); margin-top: 3px;">
+          ${remaining > 0 ? `${remaining.toLocaleString()} words to go` : '✓ Goal reached!'}
+        </div>
+      </div>
+    `;
+  }
+
+  function render(state) {
+    // Calculate time to display
+    let timeToShow;
+    if (state.running && !state.paused) {
+      timeToShow = Math.max(0, state.endEpoch - Date.now()/1000);
+    } else if (state.paused) {
+      timeToShow = Math.max(0, state.endEpoch - state.pausedAt);
+    } else {
+      timeToShow = state.durationSec;
+    }
+    const timeStr = Util.fmtTime(timeToShow);
+    
+    // Word count display
+    const wordsAdded = state.running ? Math.max(0, state.wordsNow - state.wordsAtSprintStart) : 0;
+    const wpmDisplay = state.wordsPerMinute > 0 
+      ? `<div class="sw-mini" style="color: var(--sw-accent); font-weight: 600;">${state.wordsPerMinute} WPM</div>` 
+      : '';
+
+    // Check if word count is visible
+    const wordCountVisible = document.querySelector('.kix-documentmetrics-widget-number');
+    const needsWordCount = !wordCountVisible && !state.running;
+    const wordCountHelp = needsWordCount ? `
+      <div class="sw-compact-notice" title="Enable word count: Tools → Word count, then check 'Display word count while typing'">
+        ⚠️ Enable word count: <strong>Tools → Word count</strong>
+      </div>
+    ` : '';
+
+    const minimizedClass = state.minimized ? ' sw-minimized' : '';
+    const minimizeIcon = state.minimized ? '▼' : '▲';
+    const minimizeLabel = state.minimized ? 'Expand' : 'Minimize';
+    
+    // Start/Pause button
+    let startBtnText = 'Start';
+    if (state.running && !state.paused) {
+      startBtnText = 'Pause';
+    } else if (state.paused) {
+      startBtnText = 'Resume';
+    }
+
+    return `
+      <div class="sw-card${minimizedClass}" aria-live="polite">
+        <div class="sw-header">
+          <div class="sw-header-title" style="display:flex;gap:8px;align-items:center;flex:1">
+            <img src="${chrome.runtime.getURL('icons/' + (state.compactMode ? 'toolbar_20px.png' : 'header_24px.png'))}"
+                 alt="SprintWrite"
+                 class="sw-logo"
+                 title="Click to ${state.minimized ? 'expand' : 'collapse'}"
+                 style="height: ${state.compactMode ? '20px' : '24px'}; width: auto; display: block;">
+          </div>
+          <button class="sw-minimize" title="${minimizeLabel}" aria-label="${minimizeLabel} widget">${minimizeIcon}</button>
+          <button class="sw-refresh" id="sw-refresh" title="Refresh widget" aria-label="Refresh widget">🔄</button>
+          <div class="sw-menu" id="sw-menu" role="button" aria-label="Menu" tabindex="0">⋮</div>
+          <div class="sw-menu-panel" id="sw-menu-panel" role="menu">
+            <a href="#" id="sw-toggle-compact" role="menuitem">📍 ${state.compactMode ? 'Float Mode' : 'Toolbar Mode'}</a>
+            <a href="#" id="sw-open-options" role="menuitem">⚙️ Options & Goal</a>
+            <a href="#" id="sw-view-history" role="menuitem">📜 View History</a>
+            <a href="#" id="sw-view-stats" role="menuitem">📊 Statistics</a>
+            <a href="#" id="sw-export-data" role="menuitem">📥 Export Data</a>
+            <a href="https://ko-fi.com/thegoodman99" target="_blank" role="menuitem">☕ Buy Me a Drink</a>
+          </div>
+        </div>
+
+        <div class="sw-body" style="${state.minimized && !state.running ? 'display:none' : ''}">
+          ${state.minimized && state.running ? '' : wordCountHelp}
+
+          ${state.minimized && state.running ? `
+            <!-- Minimal sprint mode: only time and controls -->
+            <div class="sw-row" style="justify-content: center;">
+              <div class="sw-time" id="sw-time" role="timer" aria-live="polite" style="font-size: 28px;">${timeStr}</div>
+            </div>
+            <div class="sw-row" style="gap: 10px;">
+              <button id="sw-start" class="sw-primary" style="flex: 2;" title="${startBtnText} sprint">${startBtnText}</button>
+              <button id="sw-reset" style="flex: 1;" title="Reset timer">Reset</button>
+            </div>
+          ` : `
+            <!-- Full widget view -->
+            <div class="sw-row">
+              <div class="sw-time" id="sw-time" role="timer" aria-live="polite">${timeStr}</div>
+              <div class="sw-col" style="align-items:flex-end; gap: 4px;">
+                <div class="sw-mini" style="font-size: 14px;"><strong id="sw-words-total">${state.wordsNow}</strong> words</div>
+                <div class="sw-mini" style="color: var(--sw-success); font-weight: 600; font-size: 13px;"><strong id="sw-words-added">+${wordsAdded}</strong> added</div>
+                ${wpmDisplay}
+              </div>
+            </div>
+
+            <div class="sw-progress-bar">
+              <div class="sw-progress-fill" id="sw-progress" style="width: 0%"></div>
+            </div>
+
+            ${renderDailyGoal(state)}
+
+            <div class="sw-row" id="sw-duration" style="gap: 6px; flex-wrap: wrap;">
+              <button class="sw-dur-btn ${state.durationSec===state.timerPreset1*60?'active':''}" data-duration="${state.timerPreset1*60}">${state.timerPreset1}m</button>
+              <button class="sw-dur-btn ${state.durationSec===state.timerPreset2*60?'active':''}" data-duration="${state.timerPreset2*60}">${state.timerPreset2}m</button>
+              <button class="sw-dur-btn ${state.durationSec===state.timerPreset3*60?'active':''}" data-duration="${state.timerPreset3*60}">${state.timerPreset3}m</button>
+              <button class="sw-dur-btn ${![state.timerPreset1*60,state.timerPreset2*60,state.timerPreset3*60].includes(state.durationSec)?'active':''}" id="sw-custom-btn">Custom</button>
+            </div>
+
+            <div class="sw-row" id="sw-custom-input" style="${![state.timerPreset1*60,state.timerPreset2*60,state.timerPreset3*60].includes(state.durationSec) ? '' : 'display:none;'} gap: 8px;">
+              <input id="sw-custom" class="sw-number" type="number" min="1" max="180" step="1" value="${Math.round(state.durationSec/60)}" placeholder="Minutes" />
+              <button id="sw-custom-set" class="sw-secondary">Set</button>
+            </div>
+
+            <div class="sw-row" style="gap: 10px;">
+              <button id="sw-start" class="sw-primary" style="flex: 2;" title="${startBtnText} sprint">${startBtnText}</button>
+              <button id="sw-reset" style="flex: 1;" title="Reset timer">Reset</button>
+            </div>
+          `}
+        </div>
+      </div>
+    `;
+  }
+
+  function updateTimeUI() {
+    const tEl = root.querySelector('#sw-time');
+    const progressEl = root.querySelector('#sw-progress');
+    
+    if (state.running && !state.paused) {
+      const remain = Math.max(0, Math.floor(state.endEpoch - Date.now()/1000));
+      if (tEl) tEl.textContent = Util.fmtTime(remain);
+      
+      // Update progress bar
+      if (progressEl) {
+        const totalDur = state.durationSec;
+        const elapsed = totalDur - remain;
+        const percent = Math.min(100, (elapsed / totalDur) * 100);
+        progressEl.style.width = percent + '%';
+      }
+    }
+  }
+
+  function updateWordsUI(currentTotal) {
+    const totalEl = root.querySelector('#sw-words-total');
+    const addedEl = root.querySelector('#sw-words-added');
+    
+    if (totalEl) {
+      totalEl.textContent = currentTotal;
+    }
+    
+    if (addedEl && state.running) {
+      const wordsAdded = Math.max(0, currentTotal - state.wordsAtSprintStart);
+      addedEl.textContent = `+${wordsAdded}`;
+    }
+  }
+
+  function bindUI(root, state) {
+    // Minimize button
+    const minimizeBtn = root.querySelector('.sw-minimize');
+    if (minimizeBtn) {
+      minimizeBtn.onclick = async () => {
+        state.minimized = !state.minimized;
+        const s = await Storage.getSettings();
+        s.minimized = state.minimized;
+        await Storage.setSettings(s);
+        root.innerHTML = render(state);
+        bindUI(root, state);
+      };
+    }
+
+    // Refresh button
+    const refreshBtn = root.querySelector('#sw-refresh');
+    if (refreshBtn) {
+      refreshBtn.onclick = async () => {
+        console.log('SprintWrite: Refreshing widget...');
+
+        // Reload settings from storage
+        const s = await Storage.getSettings();
+        state.theme = s.theme || 'light';
+        state.sound = s.sound ?? true;
+        state.celebration = s.celebration ?? true;
+        state.minimizeOnStart = s.minimizeOnStart ?? false;
+        state.dailyGoal = s.dailyGoal || 0;
+        state.timerPreset1 = s.timerPreset1 || 15;
+        state.timerPreset2 = s.timerPreset2 || 20;
+        state.timerPreset3 = s.timerPreset3 || 30;
+        state.compactMode = s.compactMode ?? true;
+
+        // Apply theme
+        applyThemeClass(root, state.theme);
+
+        // Refresh daily goal progress
+        if (state.dailyGoal > 0) {
+          const progress = await Storage.getTodayProgress();
+          state.todayWordsWritten = progress.wordsWritten;
+        }
+
+        // Reposition if in toolbar mode
+        if (state.compactMode) {
+          root.classList.add('sw-compact');
+          positionToolbarMode(root);
+        } else {
+          root.classList.remove('sw-compact');
+          root.style.top = state.position.top + 'px';
+          root.style.right = state.position.right + 'px';
+        }
+
+        // Re-render
+        root.innerHTML = render(state);
+        bindUI(root, state);
+
+        console.log('SprintWrite: Widget refreshed successfully!');
+
+        // Show brief visual feedback
+        refreshBtn.style.transform = 'rotate(360deg)';
+        setTimeout(() => {
+          const btn = root.querySelector('#sw-refresh');
+          if (btn) btn.style.transform = 'rotate(0deg)';
+        }, 300);
+      };
+    }
+
+    // Logo click to toggle minimize
+    const logo = root.querySelector('.sw-logo');
+    if (logo) {
+      logo.onclick = async (e) => {
+        e.stopPropagation(); // Prevent drag
+        state.minimized = !state.minimized;
+        const s = await Storage.getSettings();
+        s.minimized = state.minimized;
+        await Storage.setSettings(s);
+        root.innerHTML = render(state);
+        bindUI(root, state);
+      };
+      logo.style.cursor = 'pointer';
+    }
+
+    // Menu
+    const menu = root.querySelector('#sw-menu');
+    const panel = root.querySelector('#sw-menu-panel');
+    
+    if (menu && panel) {
+      const toggleMenu = (e) => {
+        e.stopPropagation();
+        panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+      };
+      
+      menu.onclick = toggleMenu;
+      document.addEventListener('click', () => { panel.style.display = 'none'; });
+    }
+
+    // Export data
+    const exportBtn = root.querySelector('#sw-export-data');
+    if (exportBtn) {
+      exportBtn.onclick = async (e) => {
+        e.preventDefault();
+        const hist = await Storage.getHistory();
+        if (hist.length === 0) {
+          alert('No data to export yet. Complete some sprints first!');
+          return;
+        }
+        const csv = Util.toCsv(hist);
+        Util.download('sprintwrite_history.csv', csv);
+      };
+    }
+
+    // Open options page
+    const optionsBtn = root.querySelector('#sw-open-options');
+    if (optionsBtn) {
+      optionsBtn.onclick = (e) => {
+        e.preventDefault();
+        chrome.runtime.sendMessage({action: 'OPEN_OPTIONS'});
+      };
+    }
+
+    // Toggle compact mode
+    const compactToggle = root.querySelector('#sw-toggle-compact');
+    if (compactToggle) {
+      compactToggle.onclick = async (e) => {
+        e.preventDefault();
+        state.compactMode = !state.compactMode;
+        
+        // Save setting
+        const s = await Storage.getSettings();
+        s.compactMode = state.compactMode;
+        await Storage.setSettings(s);
+        
+        // Toggle class and reposition
+        if (state.compactMode) {
+          root.classList.add('sw-compact');
+          positionToolbarMode(root);
+        } else {
+          root.classList.remove('sw-compact');
+          // Restore saved position for float mode
+          root.style.top = state.position.top + 'px';
+          root.style.right = state.position.right + 'px';
+        }
+
+        // Re-render to update menu text
+        root.innerHTML = render(state);
+        bindUI(root, state);
+      };
+    }
+
+    // Stats
+    const statsBtn = root.querySelector('#sw-view-stats');
+    if (statsBtn) {
+      statsBtn.onclick = (e) => {
+        e.preventDefault();
+        showStats();
+      };
+    }
+
+    // History
+    const historyBtn = root.querySelector('#sw-view-history');
+    if (historyBtn) {
+      historyBtn.onclick = (e) => {
+        e.preventDefault();
+        showHistory();
+      };
+    }
+
+    // Theme
+    const themeSel = root.querySelector('#sw-theme');
+    if (themeSel) {
+      themeSel.onchange = async () => {
+        state.theme = themeSel.value;
+        applyThemeClass(root, state.theme);
+        const s = await Storage.getSettings();
+        s.theme = state.theme;
+        await Storage.setSettings(s);
+      };
+    }
+
+    // Sound
+    const soundChk = root.querySelector('#sw-sound');
+    if (soundChk) {
+      soundChk.onchange = async () => {
+        state.sound = soundChk.checked;
+        const s = await Storage.getSettings();
+        s.sound = state.sound;
+        await Storage.setSettings(s);
+      };
+    }
+
+    // Duration buttons
+    const durBtns = root.querySelectorAll('.sw-dur-btn[data-duration]');
+    durBtns.forEach(btn => {
+      btn.onclick = () => {
+        if (state.running) return; // Can't change during sprint
+        state.durationSec = parseInt(btn.dataset.duration, 10);
+        root.innerHTML = render(state);
+        bindUI(root, state);
+      };
+    });
+
+    // Custom button
+    const customBtn = root.querySelector('#sw-custom-btn');
+    if (customBtn) {
+      customBtn.onclick = () => {
+        if (state.running) return;
+        const customInput = root.querySelector('#sw-custom-input');
+        if (customInput) {
+          customInput.style.display = customInput.style.display === 'none' ? 'flex' : 'none';
+        }
+      };
+    }
+
+    // Custom set button
+    const customSet = root.querySelector('#sw-custom-set');
+    const customInput = root.querySelector('#sw-custom');
+    if (customSet && customInput) {
+      customSet.onclick = () => {
+        if (state.running) return;
+        
+        // Get and validate input
+        const rawValue = customInput.value.trim();
+        const numValue = parseFloat(rawValue);
+        
+        // Check for invalid inputs
+        if (!rawValue || isNaN(numValue) || numValue <= 0) {
+          alert('Please enter a valid number between 1 and 180 minutes.');
+          customInput.value = '15';
+          return;
+        }
+        
+        // Round to integer and clamp to valid range
+        let mins = Math.round(numValue);
+        mins = Math.max(1, Math.min(180, mins));
+        
+        // Update value to show what was actually set
+        customInput.value = mins;
+        
+        state.durationSec = mins * 60;
+        root.innerHTML = render(state);
+        bindUI(root, state);
+      };
+      
+      // Also validate on input to prevent decimals
+      customInput.addEventListener('input', (e) => {
+        // Remove decimal point if entered
+        e.target.value = e.target.value.replace(/\./g, '');
+        // Remove negative sign
+        e.target.value = e.target.value.replace(/-/g, '');
+        // Keep only digits
+        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+      });
+    }
+
+    // Start/Pause button (toggles)
+    const startBtn = root.querySelector('#sw-start');
+    const resetBtn = root.querySelector('#sw-reset');
+
+    if (startBtn) {
+      startBtn.onclick = () => {
+        if (state.running && !state.paused) {
+          // Currently running -> PAUSE
+          state.paused = true;
+          state.pausedAt = Date.now()/1000;
+          clearTimeout(state.timerId);
+          if (state.sound) playSound('pause');
+          root.innerHTML = render(state);
+          bindUI(root, state);
+          return;
+        }
+        
+        if (state.paused) {
+          // Currently paused -> RESUME
+          state.paused = false;
+          const pauseDuration = Date.now()/1000 - state.pausedAt;
+          state.totalPausedTime += pauseDuration;
+          state.endEpoch += pauseDuration;
+          root.innerHTML = render(state);
+          bindUI(root, state);
+          startTicking();
+          return;
+        }
+
+        // Not running -> START
+        // CRITICAL: Ensure word count is visible before starting!
+        console.log('SprintWrite: Starting sprint, ensuring word count is visible...');
+        
+        const isVisible = ensureWordCountVisible();
+        
+        if (!isVisible) {
+          // Show a temporary message to user
+          const notice = document.createElement('div');
+          notice.style.cssText = `
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4aa1d8;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 9999999;
+            animation: slideDown 0.3s ease;
+          `;
+          notice.textContent = '⏳ Enabling word count... (1 second)';
+          document.body.appendChild(notice);
+          
+          setTimeout(() => {
+            notice.remove();
+          }, 1500);
+        }
+        
+        // Wait a moment for word count to become visible, then show countdown
+        setTimeout(() => {
+          state.wordsAtSprintStart = Util.countWordsHeuristic();
+          state.wordsNow = state.wordsAtSprintStart;
+          state.wordsPerMinute = 0;
+
+          console.log('SprintWrite: Sprint starting with', state.wordsAtSprintStart, 'words');
+
+          // Show countdown before starting timer
+          const timeDisplay = root.querySelector('#sw-time');
+          if (timeDisplay) {
+            // Countdown: 3, 2, 1
+            timeDisplay.textContent = 'Starting in 3';
+            setTimeout(() => {
+              timeDisplay.textContent = 'Starting in 2';
+              setTimeout(() => {
+                timeDisplay.textContent = 'Starting in 1';
+                setTimeout(async () => {
+                  // Now actually start the timer
+                  state.running = true;
+                  state.paused = false;
+                  state.totalPausedTime = 0;
+                  state.startEpoch = Date.now()/1000;
+                  state.endEpoch = state.startEpoch + state.durationSec;
+
+                  // Auto-minimize if enabled
+                  if (state.minimizeOnStart && !state.minimized) {
+                    state.minimized = true;
+                    const s = await Storage.getSettings();
+                    s.minimized = true;
+                    await Storage.setSettings(s);
+                  }
+
+                  root.innerHTML = render(state);
+                  bindUI(root, state);
+                  startTicking();
+                  window.addEventListener('beforeunload', confirmUnload);
+                }, 500);
+              }, 500);
+            }, 500);
+          }
+        }, 1200); // Wait 1.2 seconds for word count to appear
+      };
+    }
+
+    if (resetBtn) {
+      resetBtn.onclick = () => {
+        state.running = false;
+        state.paused = false;
+        state.startEpoch = 0;
+        state.endEpoch = 0;
+        state.totalPausedTime = 0;
+        state.wordsPerMinute = 0;
+        clearTimeout(state.timerId);
+        window.removeEventListener('beforeunload', confirmUnload);
+        root.innerHTML = render(state);
+        bindUI(root, state);
+      };
+    }
+  }
+
+  function startTicking() {
+    let lastWordCountCheck = Date.now();
+    let wordCountWarningShown = false;
+    
+    const poll = Util.throttle(() => {
+      state.wordsNow = Util.countWordsHeuristic();
+      updateWordsUI(state.wordsNow);
+      
+      // Check if word count is still visible every 5 seconds
+      const now = Date.now();
+      if (now - lastWordCountCheck > 5000) {
+        lastWordCountCheck = now;
+        const wordCountVisible = document.querySelector('.kix-documentmetrics-widget-number');
+        
+        if (!wordCountVisible && !wordCountWarningShown) {
+          wordCountWarningShown = true;
+          console.log('SprintWrite: Warning - word count hidden during sprint');
+          
+          // Show non-intrusive warning
+          const warningDiv = document.createElement('div');
+          warningDiv.style.cssText = `
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff9800;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 9999999;
+            cursor: pointer;
+          `;
+          warningDiv.textContent = '⚠️ Word count hidden! Click Tools → Word count to re-enable';
+          warningDiv.onclick = () => warningDiv.remove();
+          document.body.appendChild(warningDiv);
+          
+          // Auto-remove after 10 seconds
+          setTimeout(() => {
+            if (warningDiv.parentNode) {
+              warningDiv.remove();
+            }
+          }, 10000);
+        }
+      }
+    }, 1000);
+
+    const tick = () => {
+      if (!state.running || state.paused) return;
+      updateTimeUI();
+      poll();
+      const remain = state.endEpoch - Date.now()/1000;
+      if (remain <= 0) {
+        finishSprint(true);
+      } else {
+        state.timerId = setTimeout(tick, 250);
+      }
+    };
+    tick();
+  }
+
+  function confirmUnload(e) {
+    if (state.running && !state.paused) {
+      e.preventDefault();
+      e.returnValue = 'Your sprint is still running. Are you sure you want to leave?';
+      return e.returnValue;
+    }
+  }
+
+  function showWordCount() {
+    console.log('SprintWrite: Attempting to show word count...');
+    
+    try {
+      // Method 1: Find the Tools menu and click it
+      const menuBar = document.querySelector('.docs-menubar');
+      if (!menuBar) {
+        console.log('SprintWrite: Could not find menu bar');
+        showManualInstructions();
+        return false;
+      }
+      
+      // Find "Tools" menu
+      const menus = menuBar.querySelectorAll('[role="menuitem"]');
+      let toolsMenu = null;
+      
+      for (const menu of menus) {
+        const text = menu.textContent.trim();
+        if (text === 'Tools' || text.includes('Tools')) {
+          toolsMenu = menu;
+          break;
+        }
+      }
+      
+      if (!toolsMenu) {
+        console.log('SprintWrite: Could not find Tools menu');
+        showManualInstructions();
+        return false;
+      }
+      
+      console.log('SprintWrite: Clicking Tools menu...');
+      toolsMenu.click();
+      
+      // Wait for menu to open, then find "Word count"
+      setTimeout(() => {
+        const menuItems = document.querySelectorAll('[role="menuitem"]');
+        let wordCountItem = null;
+        
+        for (const item of menuItems) {
+          const text = item.textContent;
+          if (text.includes('Word count')) {
+            wordCountItem = item;
+            break;
+          }
+        }
+        
+        if (!wordCountItem) {
+          console.log('SprintWrite: Could not find Word count menu item');
+          document.body.click(); // Close menu
+          showManualInstructions();
+          return false;
+        }
+        
+        console.log('SprintWrite: Clicking Word count...');
+        wordCountItem.click();
+
+        // Wait longer for dialog to open, then find and check the checkbox
+        setTimeout(() => {
+          console.log('SprintWrite: Looking for checkbox in word count dialog...');
+
+          // Find the Word Count dialog specifically (not Gemini or other dialogs)
+          let wordCountDialog = null;
+          const allDialogs = document.querySelectorAll('[role="dialog"]');
+          console.log('SprintWrite: Found', allDialogs.length, 'dialog(s) total');
+
+          for (const dialog of allDialogs) {
+            const dialogText = dialog.textContent || '';
+            const dialogTextLower = dialogText.toLowerCase();
+            console.log('SprintWrite: Dialog text preview:', dialogText.substring(0, 200));
+            console.log('SprintWrite: Dialog aria-label:', dialog.getAttribute('aria-label'));
+
+            // Look for the dialog containing "word count", "Display word count", or counting-related text
+            if (dialogTextLower.includes('word count') ||
+                dialogTextLower.includes('display word count') ||
+                dialogTextLower.includes('while typing') ||
+                (dialogText.includes('Words:') && dialogText.includes('Characters:'))) {
+              wordCountDialog = dialog;
+              console.log('SprintWrite: Found Word Count dialog!');
+              break;
+            }
+          }
+
+          if (!wordCountDialog) {
+            console.log('SprintWrite: Could not find Word Count dialog among', allDialogs.length, 'dialogs');
+            // Try to find checkbox anywhere in document as fallback
+            const allCheckboxes = document.querySelectorAll('input[type="checkbox"]');
+            console.log('SprintWrite: Searching all', allCheckboxes.length, 'checkboxes in document...');
+
+            for (const cb of allCheckboxes) {
+              const parent = cb.closest('div');
+              const parentText = parent?.textContent || '';
+              if (parentText.includes('Display word count')) {
+                wordCountDialog = cb.closest('[role="dialog"]');
+                console.log('SprintWrite: Found Word Count dialog via checkbox parent!');
+                break;
+              }
+            }
+          }
+
+          if (!wordCountDialog) {
+            console.log('SprintWrite: Still could not find Word Count dialog');
+            const okBtn = document.querySelector('button[name="ok"]');
+            if (okBtn) okBtn.click();
+            showManualInstructions();
+            return false;
+          }
+
+          console.log('SprintWrite: Word Count dialog HTML:', wordCountDialog.innerHTML.substring(0, 500));
+
+          // Debug: List all checkboxes in the Word Count dialog
+          const allCheckboxes = wordCountDialog.querySelectorAll('input[type="checkbox"]');
+          console.log('SprintWrite: Found', allCheckboxes.length, 'checkbox(es) in Word Count dialog');
+
+          allCheckboxes.forEach((cb, i) => {
+            console.log(`SprintWrite: Checkbox ${i}:`, {
+              id: cb.id,
+              name: cb.name,
+              jsname: cb.getAttribute('jsname'),
+              ariaLabel: cb.getAttribute('aria-label'),
+              checked: cb.checked,
+              className: cb.className,
+              parentText: cb.parentElement?.textContent?.substring(0, 100)
+            });
+          });
+
+          // Find the "Display word count" checkbox
+          let checkbox = null;
+
+          // Try by aria-label first
+          checkbox = wordCountDialog.querySelector('input[aria-label*="Display word count"]');
+          if (checkbox) console.log('SprintWrite: Found by aria-label!');
+
+          // Try by searching all checkboxes in dialog
+          if (!checkbox) {
+            const checkboxes = wordCountDialog.querySelectorAll('input[type="checkbox"]');
+            for (const cb of checkboxes) {
+              const label = cb.getAttribute('aria-label') || '';
+              const jsname = cb.getAttribute('jsname') || '';
+              const parent = cb.closest('.goog-inline-block') || cb.closest('div');
+              const parentText = parent?.textContent || '';
+
+              console.log('SprintWrite: Checking checkbox with label:', label, 'jsname:', jsname, 'parentText:', parentText.substring(0, 80));
+
+              if (label.includes('Display') || parentText.includes('Display word count') || jsname === 'YPqjbf') {
+                checkbox = cb;
+                console.log('SprintWrite: Found checkbox by parent/jsname!');
+                break;
+              }
+            }
+          }
+
+          if (!checkbox) {
+            console.log('SprintWrite: Could not find checkbox in Word Count dialog after trying all methods');
+            const okBtn = document.querySelector('button[name="ok"]');
+            if (okBtn) okBtn.click();
+            showManualInstructions();
+            return false;
+          }
+          
+          console.log('SprintWrite: Found checkbox, checked:', checkbox.checked);
+
+          if (!checkbox.checked) {
+            console.log('SprintWrite: Clicking checkbox to enable word count...');
+
+            // Try to find the Material Design wrapper div
+            const wrapper = checkbox.closest('.javascriptMaterialdesignGm3wizCheckbox-checkbox') ||
+                          checkbox.closest('[jscontroller]') ||
+                          checkbox.parentElement;
+
+            if (wrapper && wrapper !== checkbox) {
+              console.log('SprintWrite: Clicking wrapper element instead of checkbox input');
+              wrapper.click();
+            } else {
+              console.log('SprintWrite: Clicking checkbox input directly');
+              checkbox.click();
+            }
+
+            // Also dispatch a change event to ensure it registers
+            setTimeout(() => {
+              checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+              console.log('SprintWrite: Dispatched change event');
+            }, 50);
+
+            // Double-check after a moment
+            setTimeout(() => {
+              console.log('SprintWrite: After click, checkbox.checked:', checkbox.checked);
+            }, 200);
+          } else {
+            console.log('SprintWrite: Checkbox already checked');
+          }
+          
+          // Close the dialog
+          setTimeout(() => {
+            const okButton = document.querySelector('button[name="ok"]');
+            if (okButton) {
+              console.log('SprintWrite: Closing dialog...');
+              okButton.click();
+              
+              // Verify word count appeared
+              setTimeout(() => {
+                const wordCount = document.querySelector('.kix-documentmetrics-widget-number');
+                if (wordCount) {
+                  console.log('SprintWrite: SUCCESS! Word count visible:', wordCount.textContent);
+                } else {
+                  console.log('SprintWrite: Word count still not visible');
+                }
+              }, 500);
+            }
+          }, 250);
+
+        }, 1000);
+        
+      }, 400);
+      
+      return true;
+      
+    } catch (e) {
+      console.log('SprintWrite: Error showing word count:', e);
+      showManualInstructions();
+      return false;
+    }
+  }
+
+  /**
+   * Retry wrapper for showWordCount with exponential backoff
+   * @param {number} maxAttempts - Maximum number of attempts (default: 2)
+   * @returns {Promise<boolean>} True if word count was successfully enabled
+   */
+  async function showWordCountWithRetry(maxAttempts = 2) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      console.log(`SprintWrite: Word count automation attempt ${attempt}/${maxAttempts}`);
+
+      const success = await showWordCount();
+      if (success) {
+        console.log('SprintWrite: Word count successfully enabled!');
+        return true;
+      }
+
+      // If not the last attempt, wait before retrying
+      if (attempt < maxAttempts) {
+        const delay = attempt * 1000; // 1s, 2s, etc.
+        console.log(`SprintWrite: Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+
+    console.log('SprintWrite: Failed to enable word count after all attempts');
+    showManualInstructions();
+    return false;
+  }
+
+  function showManualInstructions() {
+    // Instructions now shown inline in widget
+    console.log('SprintWrite: Please enable word count manually via Tools → Word count');
+  }
+
+  function playSound(type) {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      if (type === 'complete') {
+        oscillator.frequency.value = 800;
+        gainNode.gain.value = 0.3;
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.2);
+      } else if (type === 'pause') {
+        oscillator.frequency.value = 400;
+        gainNode.gain.value = 0.2;
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.1);
+      }
+    } catch (e) {
+      console.log('SprintWrite: Audio not available');
+    }
+  }
+
+  async function showStats() {
+    const hist = await Storage.getHistory();
+    if (!hist.length) {
+      alert('No statistics yet. Complete some sprints first!');
+      return;
+    }
+
+    // Filter function for time periods
+    const filterByPeriod = (history, period) => {
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - 7);
+      const startOfMonth = new Date(now);
+      startOfMonth.setDate(now.getDate() - 30);
+
+      return history.filter(record => {
+        const recordDate = new Date(record.startISO);
+        if (period === 'today') return recordDate >= startOfToday;
+        if (period === 'week') return recordDate >= startOfWeek;
+        if (period === 'month') return recordDate >= startOfMonth;
+        return true; // all time
+      });
+    };
+
+    // Calculate stats for a given filtered history
+    const calculateStats = (filteredHist) => {
+      const totalSprints = filteredHist.length;
+      const totalMinutes = filteredHist.reduce((a, r) => a + Math.floor(r.completedSec / 60), 0);
+      const totalWords = filteredHist.reduce((a, r) => a + (r.wordsGained || 0), 0);
+      const avgWPM = totalMinutes > 0 ? Math.round(totalWords / totalMinutes) : 0;
+      return { totalSprints, totalMinutes, totalWords, avgWPM };
+    };
+
+    // Create stats HTML for a given period
+    const renderStats = (period) => {
+      const filteredHist = filterByPeriod(hist, period);
+      if (filteredHist.length === 0) {
+        return `
+          <div class="sw-stat-grid">
+            <div class="sw-stat-item" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+              <div style="color: var(--sw-text-secondary); font-size: 14px;">
+                No sprints in this time period
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      const stats = calculateStats(filteredHist);
+      return `
+        <div class="sw-stat-grid">
+          <div class="sw-stat-item">
+            <div class="sw-stat-value">${stats.totalSprints}</div>
+            <div class="sw-stat-label">Total Sprints</div>
+          </div>
+          <div class="sw-stat-item">
+            <div class="sw-stat-value">${stats.totalMinutes}</div>
+            <div class="sw-stat-label">Minutes Written</div>
+          </div>
+          <div class="sw-stat-item">
+            <div class="sw-stat-value">${stats.totalWords.toLocaleString()}</div>
+            <div class="sw-stat-label">Words Written</div>
+          </div>
+          <div class="sw-stat-item">
+            <div class="sw-stat-value">${stats.avgWPM}</div>
+            <div class="sw-stat-label">Avg Words/Min</div>
+          </div>
+        </div>
+      `;
+    };
+
+    const statsHtml = `
+      <div class="sw-stats-overlay">
+        <div class="sw-stats-panel">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <img src="${chrome.runtime.getURL('icons/logo_with_title_256px.png')}"
+                 alt="SprintWrite"
+                 style="max-width: 200px; height: auto;">
+            <h2 style="margin: 12px 0 0 0; font-size: 20px;">📊 Your Statistics</h2>
+          </div>
+
+          <div class="sw-stats-tabs">
+            <button class="sw-stats-tab active" data-period="all">All Time</button>
+            <button class="sw-stats-tab" data-period="month">Month</button>
+            <button class="sw-stats-tab" data-period="week">Week</button>
+            <button class="sw-stats-tab" data-period="today">Today</button>
+          </div>
+
+          <div class="sw-stats-content" id="sw-stats-content">
+            ${renderStats('all')}
+          </div>
+
+          <div class="sw-stats-actions">
+            <button class="sw-secondary sw-stats-copy">📋 Copy Stats</button>
+            <button class="sw-primary sw-stats-close">Close</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const overlay = document.createElement('div');
+    overlay.innerHTML = statsHtml;
+    document.body.appendChild(overlay);
+
+    let currentPeriod = 'all';
+
+    // Tab switching
+    const tabs = overlay.querySelectorAll('.sw-stats-tab');
+    const content = overlay.querySelector('#sw-stats-content');
+    
+    tabs.forEach(tab => {
+      tab.onclick = () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentPeriod = tab.dataset.period;
+        content.innerHTML = renderStats(currentPeriod);
+      };
+    });
+
+    // Copy stats function
+    const copyStats = async () => {
+      const filteredHist = filterByPeriod(hist, currentPeriod);
+      if (filteredHist.length === 0) {
+        alert('No stats to copy for this period!');
+        return;
+      }
+
+      const stats = calculateStats(filteredHist);
+      const periodName = currentPeriod === 'all' ? 'All Time' :
+                        currentPeriod === 'month' ? 'Past 30 Days' :
+                        currentPeriod === 'week' ? 'Past 7 Days' : 'Today';
+
+      // Get daily goal progress if available
+      const settings = await Storage.getSettings();
+      const dailyGoal = settings.dailyGoal || 0;
+      let goalSection = '';
+
+      if (dailyGoal > 0) {
+        const progress = await Storage.getTodayProgress();
+        const percentage = Math.min(100, Math.round((progress.wordsWritten / dailyGoal) * 100));
+        goalSection = `
+Writing Goal Progress: ${progress.wordsWritten.toLocaleString()} / ${dailyGoal.toLocaleString()} words (${percentage}%)
+`;
+      }
+
+      const statsText = `SprintWrite – Writing Sprint Timer
+${periodName} Statistics
+
+Total Sprints: ${stats.totalSprints}
+Minutes Written: ${stats.totalMinutes}
+Words Written: ${stats.totalWords.toLocaleString()}
+Avg Words/Min: ${stats.avgWPM}${goalSection}
+Keep writing!
+
+Track YOUR writing sprints FREE:
+Chrome Extension: chrome.google.com/webstore (search "SprintWrite")
+Created by: ko-fi.com/thegoodman99`;
+
+      navigator.clipboard.writeText(statsText).then(() => {
+        // Show feedback
+        const copyBtn = overlay.querySelector('.sw-stats-copy');
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = '✓ Copied!';
+        copyBtn.style.background = 'var(--sw-success)';
+        copyBtn.style.color = '#fff';
+        setTimeout(() => {
+          copyBtn.textContent = originalText;
+          copyBtn.style.background = '';
+          copyBtn.style.color = '';
+        }, 2000);
+      }).catch(() => {
+        alert('Failed to copy to clipboard');
+      });
+    };
+
+    const closeOverlay = () => {
+      document.removeEventListener('keydown', escapeHandler);
+      overlay.remove();
+    };
+    
+    const escapeHandler = (e) => {
+      if (e.key === 'Escape') closeOverlay();
+    };
+
+    const copyBtn = overlay.querySelector('.sw-stats-copy');
+    if (copyBtn) {
+      copyBtn.onclick = copyStats;
+    }
+
+    const closeBtn = overlay.querySelector('.sw-stats-close');
+    if (closeBtn) {
+      closeBtn.onclick = closeOverlay;
+    }
+    
+    overlay.onclick = (e) => {
+      if (e.target.classList.contains('sw-stats-overlay')) {
+        closeOverlay();
+      }
+    };
+    
+    document.addEventListener('keydown', escapeHandler);
+  }
+
+  async function showHistory() {
+    const hist = await Storage.getHistory();
+    if (!hist.length) {
+      alert('No sprint history yet. Complete some sprints first!');
+      return;
+    }
+
+    // Sort by date, newest first
+    const sorted = [...hist].sort((a, b) => new Date(b.startISO) - new Date(a.startISO));
+    
+    // Take most recent 50
+    const recent = sorted.slice(0, 50);
+    
+    const historyRows = recent.map((record) => {
+      const date = new Date(record.startISO);
+      const dateStr = date.toLocaleDateString();
+      const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const duration = Math.floor(record.completedSec / 60);
+      const words = record.wordsGained || 0;
+      const wpm = record.wpm || 0;
+      const docTitle = record.docTitle || 'Unknown Document';
+      const truncatedTitle = docTitle.length > 30 ? docTitle.substring(0, 27) + '...' : docTitle;
+      
+      return `
+        <tr>
+          <td>${dateStr}</td>
+          <td>${timeStr}</td>
+          <td title="${docTitle}">${truncatedTitle}</td>
+          <td>${duration}m</td>
+          <td>${words}</td>
+          <td>${wpm}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const historyHtml = `
+      <div class="sw-stats-overlay">
+        <div class="sw-stats-panel" style="max-width: 700px;">
+          <div style="text-align: center; margin-bottom: 20px;">
+            <img src="${chrome.runtime.getURL('icons/logo_with_title_256px.png')}"
+                 alt="SprintWrite"
+                 style="max-width: 200px; height: auto;">
+            <h2 style="margin: 12px 0 8px 0; font-size: 20px;">📜 Global Sprint History</h2>
+          </div>
+          <p style="margin: 0 0 8px 0; color: #666; font-size: 13px;">
+            Showing your ${recent.length} most recent sprints${hist.length > 50 ? ` (of ${hist.length} total)` : ''}
+          </p>
+          <p style="margin: 0 0 16px 0; color: var(--sw-success); font-size: 12px; font-weight: 600;">
+            ✓ Tracks sprints across ALL your Google Docs
+          </p>
+          <div style="overflow-x: auto; max-height: 400px;">
+            <table class="sw-history-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Document</th>
+                  <th>Dur</th>
+                  <th>Words</th>
+                  <th>WPM</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${historyRows}
+              </tbody>
+            </table>
+          </div>
+          <button class="sw-primary sw-stats-close" style="margin-top: 16px;">Close</button>
+        </div>
+      </div>
+    `;
+
+    const overlay = document.createElement('div');
+    overlay.innerHTML = historyHtml;
+    document.body.appendChild(overlay);
+
+    const closeOverlay = () => {
+      document.removeEventListener('keydown', escapeHandler);
+      overlay.remove();
+    };
+    
+    const escapeHandler = (e) => {
+      if (e.key === 'Escape') closeOverlay();
+    };
+
+    const closeBtn = overlay.querySelector('.sw-stats-close');
+    if (closeBtn) {
+      closeBtn.onclick = closeOverlay;
+    }
+    overlay.onclick = (e) => {
+      if (e.target.classList.contains('sw-stats-overlay')) {
+        closeOverlay();
+      }
+    };
+    
+    document.addEventListener('keydown', escapeHandler);
+  }
+
+  async function finishSprint(natural) {
+    state.running = false;
+    state.paused = false;
+    clearTimeout(state.timerId);
+    window.removeEventListener('beforeunload', confirmUnload);
+
+    const completedSec = Math.max(0, Math.floor((Date.now()/1000) - state.startEpoch - state.totalPausedTime));
+    const wordsEnd = Util.countWordsHeuristic();
+    const wordsGained = Math.max(0, wordsEnd - state.wordsAtSprintStart);
+    
+    // Calculate WPM
+    const completedMin = completedSec / 60;
+    state.wordsPerMinute = completedMin > 0 ? Math.round(wordsGained / completedMin) : 0;
+    
+    // Get document title for tracking
+    const docTitle = document.title.replace(' - Google Docs', '').trim() || 'Untitled';
+    
+    const record = {
+      startISO: new Date(state.startEpoch * 1000).toISOString(),
+      durationMin: Math.round(state.durationSec/60),
+      completedSec,
+      wordsStart: state.wordsAtSprintStart,
+      wordsEnd,
+      wordsGained,
+      wpm: state.wordsPerMinute,
+      completed: natural,
+      docTitle: docTitle // NEW: Track which document
+    };
+
+    // Save history
+    if (completedSec > 0) {
+      await Storage.appendHistory(record);
+
+      // Update today's progress for daily goal
+      const previousWordsToday = state.todayWordsWritten;
+      state.todayWordsWritten += wordsGained;
+
+      // Check if daily goal was just reached
+      const goalReached = state.dailyGoal > 0 &&
+                          previousWordsToday < state.dailyGoal &&
+                          state.todayWordsWritten >= state.dailyGoal;
+
+      if (goalReached && state.celebration) {
+        showGoalCelebration(state.dailyGoal);
+      }
+    }
+
+    if (state.sound && natural) {
+      playSound('complete');
+    }
+
+    if (state.celebration && natural && completedSec >= state.durationSec * 0.9) {
+      showCelebration(wordsGained, state.wordsPerMinute);
+    }
+
+    // Re-render to show WPM and updated daily goal
+    root.innerHTML = render(state);
+    bindUI(root, state);
+  }
+
+  function showCelebration(words, wpm) {
+    const messages = [
+      '🎉 Great job!',
+      '✨ Sprint completed!',
+      '🚀 You did it!',
+      '💪 Well done!',
+      '⭐ Amazing work!'
+    ];
+    const msg = messages[Math.floor(Math.random() * messages.length)];
+    
+    // Show Ko-fi link occasionally (every 10th sprint)
+    Storage.getHistory().then(hist => {
+      const sprintCount = hist.length;
+      const showKofi = sprintCount > 0 && sprintCount % 10 === 0;
+      
+      const kofiLink = showKofi ? `
+        <div style="margin-top: 12px; font-size: 12px; opacity: 0.9;">
+          <a href="https://ko-fi.com/thegoodman99" target="_blank" style="color: #fff; text-decoration: none; display: flex; align-items: center; gap: 4px; justify-content: center;">
+            ☕ Enjoying SprintWrite? Buy me a Drink!
+          </a>
+        </div>
+      ` : '';
+      
+      const celebDiv = document.createElement('div');
+      celebDiv.className = 'sw-celebration';
+      celebDiv.innerHTML = `
+        <div class="sw-celebration-content">
+          <div class="sw-celebration-emoji">${msg.split(' ')[0]}</div>
+          <div class="sw-celebration-text">${msg.substring(2)}</div>
+          <div class="sw-celebration-stats">
+            <div>+${words} words</div>
+            <div>${wpm} WPM</div>
+          </div>
+          ${kofiLink}
+        </div>
+      `;
+      document.body.appendChild(celebDiv);
+      
+      setTimeout(() => celebDiv.classList.add('sw-celebration-show'), 10);
+      setTimeout(() => {
+        celebDiv.classList.remove('sw-celebration-show');
+        setTimeout(() => celebDiv.remove(), 300);
+      }, showKofi ? 5000 : 3000); // Show longer if Ko-fi link present
+    });
+  }
+
+  function showGoalCelebration(goal) {
+    const celebDiv = document.createElement('div');
+    celebDiv.className = 'sw-celebration';
+    celebDiv.innerHTML = `
+      <div class="sw-celebration-content">
+        <div class="sw-celebration-emoji">🎯</div>
+        <div class="sw-celebration-text">Writing Goal Reached!</div>
+        <div class="sw-celebration-stats">
+          <div>${goal.toLocaleString()} words today!</div>
+        </div>
+        <div style="margin-top: 12px; font-size: 14px; opacity: 0.9; color: var(--sw-success);">
+          Keep up the amazing work! ✨
+        </div>
+      </div>
+    `;
+    document.body.appendChild(celebDiv);
+
+    setTimeout(() => celebDiv.classList.add('sw-celebration-show'), 10);
+    setTimeout(() => {
+      celebDiv.classList.remove('sw-celebration-show');
+      setTimeout(() => celebDiv.remove(), 300);
+    }, 4000);
+  }
+
+  // Initialize word count display
+  setTimeout(() => {
+    const initialWords = Util.countWordsHeuristic();
+    state.wordsNow = initialWords;
+    updateWordsUI(initialWords);
+  }, 500);
+
+  // Keep word count updated even when not sprinting
+  const wordCountInterval = setInterval(() => {
+    if (!state.running) {
+      const currentWords = Util.countWordsHeuristic();
+      state.wordsNow = currentWords;
+      updateWordsUI(currentWords);
+    }
+  }, 2000);
+
+  // Listen for real-time settings changes from options page
+  chrome.storage.onChanged.addListener(async (changes, areaName) => {
+    console.log('SprintWrite: Storage changed!', 'Area:', areaName, 'Changes:', changes);
+
+    if (areaName !== 'sync') {
+      console.log('SprintWrite: Ignoring non-sync storage change');
+      return;
+    }
+
+    // Update settings in real-time
+    if (changes.settings) {
+      console.log('SprintWrite: Settings detected, old:', changes.settings.oldValue, 'new:', changes.settings.newValue);
+      const newSettings = changes.settings.newValue;
+
+      // Update all state values from new settings
+      console.log('SprintWrite: Updating state from new settings...');
+      state.theme = newSettings.theme || 'light';
+      state.sound = newSettings.sound ?? true;
+      state.celebration = newSettings.celebration ?? true;
+      state.minimizeOnStart = newSettings.minimizeOnStart ?? false;
+      state.dailyGoal = newSettings.dailyGoal || 0;
+      state.timerPreset1 = newSettings.timerPreset1 || 15;
+      state.timerPreset2 = newSettings.timerPreset2 || 20;
+      state.timerPreset3 = newSettings.timerPreset3 || 30;
+
+      // Apply theme class
+      applyThemeClass(root, state.theme);
+
+      // Handle compact mode changes
+      if (newSettings.compactMode !== undefined && newSettings.compactMode !== state.compactMode) {
+        state.compactMode = newSettings.compactMode;
+        if (state.compactMode) {
+          root.classList.add('sw-compact');
+          positionToolbarMode(root);
+        } else {
+          root.classList.remove('sw-compact');
+          root.style.top = state.position.top + 'px';
+          root.style.right = state.position.right + 'px';
+        }
+      }
+
+      // Refresh daily goal progress
+      if (state.dailyGoal > 0) {
+        const progress = await Storage.getTodayProgress();
+        state.todayWordsWritten = progress.wordsWritten;
+      }
+
+      // Always re-render when settings change
+      console.log('SprintWrite: Settings changed, re-rendering widget...');
+      console.log('SprintWrite: New state:', { sound: state.sound, theme: state.theme, celebration: state.celebration });
+      root.innerHTML = render(state);
+      bindUI(root, state);
+    }
+  });
+
+  // Listen for messages from options page
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    console.log('SprintWrite: Received message:', message);
+
+    if (message.action === 'REFRESH_WIDGET') {
+      console.log('SprintWrite: Refresh widget requested from options page');
+
+      // Trigger the refresh button click to reuse existing logic
+      const refreshBtn = root.querySelector('#sw-refresh');
+      if (refreshBtn) {
+        console.log('SprintWrite: Clicking refresh button to apply settings');
+        refreshBtn.click();
+        sendResponse({ success: true });
+      } else {
+        console.log('SprintWrite: Refresh button not found');
+        sendResponse({ success: false, error: 'Refresh button not found' });
+      }
+    }
+
+    return true; // Keep message channel open for async response
+  });
+
+  // Cleanup on page unload
+  window.addEventListener('unload', () => {
+    clearInterval(wordCountInterval);
+    clearTimeout(state.timerId);
+  });
+
+})();

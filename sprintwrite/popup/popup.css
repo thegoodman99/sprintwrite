@@ -27,11 +27,18 @@ body {
 
 header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
+  gap: 12px;
   margin-bottom: 20px;
   padding-bottom: 16px;
   border-bottom: 2px solid var(--border);
+}
+
+header .logo {
+  height: 40px;
+  width: auto;
+  display: block;
 }
 
 h1 {
