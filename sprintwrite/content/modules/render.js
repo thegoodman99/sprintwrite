@@ -98,7 +98,6 @@ window.SprintWriteRender = {
           <div class="sw-menu-panel" id="sw-menu-panel" role="menu">
             <a href="#" id="sw-toggle-compact" role="menuitem">📍 ${state.compactMode ? 'Float Mode' : 'Toolbar Mode'}</a>
             <a href="#" id="sw-open-options" role="menuitem">⚙️ Options & Goal</a>
-            <a href="#" id="sw-view-history" role="menuitem">📜 View History</a>
             <a href="#" id="sw-view-stats" role="menuitem">📊 Statistics</a>
             <a href="#" id="sw-export-data" role="menuitem">📥 Export Data</a>
             <a href="https://ko-fi.com/thegoodman99" target="_blank" role="menuitem">☕ Buy Me a Drink</a>

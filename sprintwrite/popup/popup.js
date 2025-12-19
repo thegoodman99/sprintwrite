@@ -2,14 +2,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Load history
   chrome.storage.sync.get(['sw_history'], (result) => {
     const history = result.sw_history || [];
-    
+
     // Calculate stats
     const totalSprints = history.length;
     const totalWords = history.reduce((sum, r) => sum + (r.wordsEnd - r.wordsStart), 0);
-    
+
     document.getElementById('total-sprints').textContent = totalSprints;
     document.getElementById('total-words').textContent = totalWords.toLocaleString();
-    
+
     // Update status text
     const statusText = document.getElementById('status-text');
     if (totalSprints === 0) {
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       statusText.textContent = `Great progress! Keep up the momentum! 🚀`;
     }
   });
-  
+
   // Button handlers
   document.getElementById('open-options').addEventListener('click', () => {
     chrome.runtime.openOptionsPage();

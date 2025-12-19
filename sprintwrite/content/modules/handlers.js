@@ -165,15 +165,6 @@ window.SprintWriteHandlers = {
       };
     }
 
-    // History
-    const historyBtn = root.querySelector('#sw-view-history');
-    if (historyBtn) {
-      historyBtn.onclick = async (e) => {
-        e.preventDefault();
-        await SprintWriteStats.showHistory();
-      };
-    }
-
     // Duration buttons
     const durBtns = root.querySelectorAll('.sw-dur-btn[data-duration]');
     durBtns.forEach(btn => {

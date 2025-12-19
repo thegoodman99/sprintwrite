@@ -12,7 +12,23 @@ window.SprintWriteStats = {
   async showStats() {
     const hist = await Storage.getHistory();
     if (!hist.length) {
-      alert('No statistics yet. Complete some sprints first!');
+      const toast = document.createElement('div');
+      toast.textContent = 'No statistics yet. Complete some sprints first!';
+      toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #4aa1d8;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 14px;
+        z-index: 999999;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      `;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
       return;
     }
 
@@ -131,35 +147,73 @@ window.SprintWriteStats = {
       const filteredHist = filterByPeriod(hist, period);
       const stats = calculateStats(filteredHist);
 
-      const periodName = period.charAt(0).toUpperCase() + period.slice(1);
+      const periodLabel = {
+        today: "Today's Statistics",
+        week: "This Week's Statistics",
+        month: "This Month's Statistics",
+        all: "All Time Statistics"
+      }[period];
+
       const settings = await Storage.getSettings();
       const dailyGoal = settings.dailyGoal || 0;
       let goalSection = '';
 
-      if (dailyGoal > 0 && period === 'today') {
-        const progress = await Storage.getTodayProgress();
-        const percentage = Math.min(100, Math.round((progress.wordsWritten / dailyGoal) * 100));
-        goalSection = `\nWriting Goal Progress: ${progress.wordsWritten.toLocaleString()} / ${dailyGoal.toLocaleString()} words (${percentage}%)\n`;
+      if (dailyGoal > 0) {
+        const percentage = Math.min(100, Math.round((stats.totalWords / dailyGoal) * 100));
+        goalSection = `\nWriting Goal: ${stats.totalWords.toLocaleString()} / ${dailyGoal.toLocaleString()} words (${percentage}%)`;
       }
 
-      const statsText = `SprintWrite – Writing Sprint Timer
-${periodName} Statistics
+      const statsText = `SprintWrite – ${periodLabel}
 
 Total Sprints: ${stats.totalSprints}
 Minutes Written: ${stats.totalMinutes}
 Words Written: ${stats.totalWords.toLocaleString()}
-Avg Words/Min: ${stats.avgWPM}${goalSection}
-Keep writing!
-
-Track YOUR writing sprints FREE:
-Chrome Extension: chrome.google.com/webstore (search "SprintWrite")
-Created by: ko-fi.com/thegoodman99`;
+Avg Words/Min: ${stats.avgWPM}${goalSection}`;
 
       try {
         await navigator.clipboard.writeText(statsText);
-        alert('Statistics copied to clipboard!');
+
+        // Show toast notification
+        const toast = document.createElement('div');
+        toast.textContent = '✓ Statistics copied to clipboard!';
+        toast.style.cssText = `
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: #4aa1d8;
+          color: white;
+          padding: 12px 20px;
+          border-radius: 8px;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          font-size: 14px;
+          z-index: 999999;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+          animation: slideIn 0.3s ease-out;
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transition = 'opacity 0.3s ease-out';
+          setTimeout(() => toast.remove(), 300);
+        }, 2000);
       } catch (err) {
-        alert('Could not copy to clipboard. Try again.');
+        const toast = document.createElement('div');
+        toast.textContent = '✗ Could not copy to clipboard';
+        toast.style.cssText = `
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: #e74c3c;
+          color: white;
+          padding: 12px 20px;
+          border-radius: 8px;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          font-size: 14px;
+          z-index: 999999;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
       }
     };
 
@@ -174,7 +228,23 @@ Created by: ko-fi.com/thegoodman99`;
    * Show history modal (simplified version - full implementation in inject.js)
    */
   async showHistory() {
-    alert('History modal - see options page for full history');
+    const toast = document.createElement('div');
+    toast.textContent = 'See options page for full history';
+    toast.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #4aa1d8;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      z-index: 999999;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
   },
 
   /**
@@ -183,7 +253,23 @@ Created by: ko-fi.com/thegoodman99`;
   async exportHistory() {
     const h = await Storage.getHistory();
     if (h.length === 0) {
-      alert('No history to export yet!');
+      const toast = document.createElement('div');
+      toast.textContent = 'No history to export yet!';
+      toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #4aa1d8;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 14px;
+        z-index: 999999;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      `;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
       return;
     }
     const csv = Util.toCsv(h);

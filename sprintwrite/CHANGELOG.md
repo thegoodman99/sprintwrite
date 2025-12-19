@@ -5,6 +5,45 @@ All notable changes to SprintWrite will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.2] - 2024-12-19
+
+### Fixed
+- **Critical:** Fixed missing sprints bug when Chrome sync storage quota exceeded (QUOTA_BYTES_PER_ITEM)
+- History now properly reads from both sync and local storage, recovering previously invisible sprints
+
+### Added
+- **Hybrid Storage Strategy:** Unlimited history with cross-device sync
+  - Last 30 days stored in sync storage (syncs across Chrome devices)
+  - Older sprints automatically archived to local storage (unlimited capacity)
+  - Supports years of data without performance impact
+- Automatic merge and deduplication of sync and local history
+- Seamless auto-migration of sprints older than 30 days
+
+### Changed
+- `getHistory()` now checks both sync and local storage areas
+- `appendHistory()` intelligently manages storage based on sprint age
+- History automatically sorted by date (newest first)
+- Zero user maintenance required
+
+## [2.4.1] - 2024-12-17
+
+### Added
+- Date range filters for Share Stats (Today/Week/Month/All Time)
+- Toast notifications to replace blocking browser alerts
+- Consistent clean stats format across options page and widget modal
+
+### Changed
+- Share stats output format - removed promotional text, cleaner presentation
+- Logo rendering - removed image-rendering property for better quality on high-DPI displays
+- Statistics modal copy function now uses same format as options page share
+
+### Removed
+- "View History" menu item (unused feature)
+- Blocking `alert()` dialogs throughout the extension
+
+### Fixed
+- Logo blur on high-DPI/Retina displays
+
 ## [2.4.0] - 2024-11-22
 
 ### Added

@@ -2,7 +2,7 @@
 
 A completely **FREE** Chrome extension that helps writers stay productive with timed writing sprints, real-time word tracking, and detailed statistics.
 
-![Version](https://img.shields.io/badge/version-2.4.0-blue)
+![Version](https://img.shields.io/badge/version-2.4.2-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## Features
@@ -199,7 +199,22 @@ MIT License - feel free to use, modify, and distribute.
 
 ## Changelog
 
-### Version 2.4.0 (Current)
+### Version 2.4.2 (Current)
+- 🐛 **Critical Fix** - Fixed missing sprints bug when Chrome storage quota exceeded
+- 💾 **Hybrid Storage** - Unlimited history with automatic archiving
+  - Last 30 days sync across devices
+  - Older sprints stored locally (years of data)
+  - Zero maintenance required
+- 📦 **Smart Migration** - Automatic archiving of sprints older than 30 days
+
+### Version 2.4.1
+- 📊 **Date Range Filters** - Share stats with period selection (Today/Week/Month/All Time)
+- 🎨 **Cleaner Share Format** - Simplified stats output without promotional text
+- 🔔 **Toast Notifications** - Replaced blocking alerts with subtle toasts
+- 🗑️ **UI Cleanup** - Removed unused "View History" menu item
+- 🐛 **Logo Fix** - Improved logo rendering on high-DPI displays
+
+### Version 2.4.0
 - 🏗️ **Code Architecture** - Refactored into modular architecture (8 focused modules)
 - 🎨 **UI/UX Improvements** - Completely redesigned options page with modern aesthetics
 - 🖼️ **New Logos** - Updated with high-resolution logos (256px, 512px, 1024px)

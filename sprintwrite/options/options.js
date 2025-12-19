@@ -393,37 +393,59 @@
       return;
     }
 
-    // Calculate statistics
-    const totalSprints = hist.length;
-    const totalMinutes = hist.reduce((a, r) => a + Math.floor(r.completedSec / 60), 0);
-    const totalWords = hist.reduce((a, r) => a + (r.wordsGained || 0), 0);
+    // Get selected period
+    const period = document.getElementById('stats-period').value;
+    const periodLabel = {
+      today: "Today's Statistics",
+      week: "This Week's Statistics",
+      month: "This Month's Statistics",
+      all: "All Time Statistics"
+    }[period];
+
+    // Filter history by period
+    const now = new Date();
+    let filtered = hist;
+
+    if (period === 'today') {
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      filtered = hist.filter(r => new Date(r.startISO) >= startOfToday);
+    } else if (period === 'week') {
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      filtered = hist.filter(r => new Date(r.startISO) >= startOfWeek);
+    } else if (period === 'month') {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      filtered = hist.filter(r => new Date(r.startISO) >= startOfMonth);
+    }
+
+    if (filtered.length === 0) {
+      showToast(`No sprints found for ${period === 'today' ? 'today' : period === 'week' ? 'this week' : 'this month'}.`, 'error');
+      return;
+    }
+
+    // Calculate statistics for the period
+    const totalSprints = filtered.length;
+    const totalMinutes = filtered.reduce((a, r) => a + Math.floor(r.completedSec / 60), 0);
+    const totalWords = filtered.reduce((a, r) => a + (r.wordsGained || 0), 0);
     const avgWPM = totalMinutes > 0 ? Math.round(totalWords / totalMinutes) : 0;
 
-    // Get daily goal progress if available
+    // Get goal progress for the period
     const settings = await Storage.getSettings();
     const dailyGoal = settings.dailyGoal || 0;
     let goalSection = '';
 
     if (dailyGoal > 0) {
-      const progress = await Storage.getTodayProgress();
-      const percentage = Math.min(100, Math.round((progress.wordsWritten / dailyGoal) * 100));
-      goalSection = `
-Daily Goal Progress: ${progress.wordsWritten.toLocaleString()} / ${dailyGoal.toLocaleString()} words (${percentage}%)
-`;
+      const percentage = Math.min(100, Math.round((totalWords / dailyGoal) * 100));
+      goalSection = `\nWriting Goal: ${totalWords.toLocaleString()} / ${dailyGoal.toLocaleString()} words (${percentage}%)`;
     }
 
-    const statsText = `SprintWrite – Writing Sprint Timer
-All Time Statistics
+    const statsText = `SprintWrite – ${periodLabel}
 
 Total Sprints: ${totalSprints}
 Minutes Written: ${totalMinutes}
 Words Written: ${totalWords.toLocaleString()}
-Avg Words/Min: ${avgWPM}${goalSection}
-Keep writing!
-
-Track YOUR writing sprints FREE:
-Chrome Extension: chrome.google.com/webstore (search "SprintWrite")
-Created by: ko-fi.com/thegoodman99`;
+Avg Words/Min: ${avgWPM}${goalSection}`;
 
     try {
       await navigator.clipboard.writeText(statsText);

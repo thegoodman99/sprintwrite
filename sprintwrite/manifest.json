@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "SprintWrite – Writing Sprint Timer for Google Docs",
-  "version": "2.4.0",
+  "version": "2.4.2",
   "description": "Completely FREE writing sprint timer with word tracking, statistics, WPM calculation, and multiple themes. All features included.",
   "permissions": ["storage"],
   "host_permissions": ["https://docs.google.com/*"],
