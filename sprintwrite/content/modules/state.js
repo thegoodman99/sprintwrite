@@ -44,7 +44,9 @@ window.SprintWriteState = {
       timerPreset2: settings.timerPreset2 || 20,
       timerPreset3: settings.timerPreset3 || 30,
       minimizeOnStart: settings.minimizeOnStart ?? false,
-      inMinimalMode: false // Special minimal mode entered on sprint start
+      inMinimalMode: false, // Special minimal mode entered on sprint start
+      pendingSprints: [],   // Finished sprints that failed to save (retried)
+      pendingRetryId: null
     };
   }
 };

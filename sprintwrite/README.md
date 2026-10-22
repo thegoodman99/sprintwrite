@@ -12,7 +12,7 @@ A completely **FREE** Chrome extension that helps writers stay productive with t
 - 📝 **Real-time Word Tracking** - See current word count, words added during sprint, and WPM
 - 🎯 **Daily Writing Goal** - Set a daily word count target and track your progress
 - 📊 **Sprint Statistics** - Track performance across all your Google Docs
-- 📜 **Global History** - Unlimited sprint history with document names, dates, and stats
+- 📜 **Global History** - Years of sprint history with document names, dates, and stats
 - 📥 **Export Data** - Download your complete sprint history as CSV
 
 ### Customization

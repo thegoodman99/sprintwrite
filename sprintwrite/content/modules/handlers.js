@@ -255,7 +255,7 @@ window.SprintWriteHandlers = {
         state.totalPausedTime = 0;
         state.wordsPerMinute = 0;
         clearTimeout(state.timerId);
-        window.removeEventListener('beforeunload', SprintWriteSprint.confirmUnload(state));
+        SprintWriteSprint.updateUnloadGuard(state);
         root.innerHTML = SprintWriteRender.render(state);
         this.bindUI(root, state);
       };
@@ -304,7 +304,7 @@ window.SprintWriteHandlers = {
             root.innerHTML = SprintWriteRender.render(state);
             handlers.bindUI(root, state);
             SprintWriteSprint.startTicking(root, state, handlers);
-            window.addEventListener('beforeunload', SprintWriteSprint.confirmUnload(state));
+            SprintWriteSprint.updateUnloadGuard(state);
           }, 1000);
         }, 1000);
       }, 1000);

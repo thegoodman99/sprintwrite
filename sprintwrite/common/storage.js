@@ -17,6 +17,10 @@ const dedupeByStart = (records) => {
 const sortNewestFirst = (records) =>
   records.sort((a, b) => new Date(b.startISO) - new Date(a.startISO));
 
+// History writes are read-modify-write; run them one at a time so a retry
+// and a new sprint can't overwrite each other
+let historyWriteQueue = Promise.resolve();
+
 const Storage = {
   async get(key, area = 'sync') {
     try {
@@ -68,34 +72,48 @@ const Storage = {
 
     return sortNewestFirst(dedupeByStart([...sync, ...local]));
   },
-  async appendHistory(rec) {
-    const syncHist = (await Storage.get(SW_KEYS.HISTORY, 'sync')) || [];
-    const all = sortNewestFirst(dedupeByStart([...syncHist, rec]));
+  /**
+   * Save a sprint record.
+   * @returns {Promise<boolean>} true only if the record was persisted
+   */
+  appendHistory(rec) {
+    const write = historyWriteQueue.then(() => Storage.writeHistoryRecord(rec));
+    historyWriteQueue = write;
+    return write;
+  },
+  async writeHistoryRecord(rec) {
+    try {
+      const syncHist = (await Storage.get(SW_KEYS.HISTORY, 'sync')) || [];
+      const all = sortNewestFirst(dedupeByStart([...syncHist, rec]));
 
-    // Keep the newest sprints that fit in one sync item (cross-device);
-    // everything older is archived to local storage (unlimited capacity)
-    const recent = [];
-    let bytes = SW_KEYS.HISTORY.length + 2;
-    for (const sprint of all) {
-      bytes += byteLength(JSON.stringify(sprint)) + 1;
-      if (bytes > SYNC_HISTORY_BUDGET) break;
-      recent.push(sprint);
-    }
-    const toArchive = all.slice(recent.length);
+      // Keep the newest sprints that fit in one sync item (cross-device);
+      // older ones are archived to local storage (~10 MB quota, tens of
+      // thousands of sprints)
+      const recent = [];
+      let bytes = SW_KEYS.HISTORY.length + 2;
+      for (const sprint of all) {
+        bytes += byteLength(JSON.stringify(sprint)) + 1;
+        if (bytes > SYNC_HISTORY_BUDGET) break;
+        recent.push(sprint);
+      }
+      const toArchive = all.slice(recent.length);
 
-    // Archive first so a failed sync write can never drop a sprint
-    if (toArchive.length > 0) {
-      const localHist = (await Storage.get(SW_KEYS.HISTORY, 'local')) || [];
-      const archived = await Storage.set(SW_KEYS.HISTORY, dedupeByStart([...localHist, ...toArchive]), 'local');
-      // Couldn't archive: leave sync untouched rather than drop older sprints
-      if (!archived) return;
-    }
+      // Archive first so a failed sync write can never drop a sprint
+      if (toArchive.length > 0) {
+        const localHist = (await Storage.get(SW_KEYS.HISTORY, 'local')) || [];
+        const archived = await Storage.set(SW_KEYS.HISTORY, dedupeByStart([...localHist, ...toArchive]), 'local');
+        // Couldn't archive: leave sync untouched rather than drop older sprints
+        if (!archived) return false;
+      }
 
-    const synced = await Storage.set(SW_KEYS.HISTORY, recent, 'sync');
-    if (!synced) {
+      if (await Storage.set(SW_KEYS.HISTORY, recent, 'sync')) return true;
+
       // Sync unavailable (quota, rate limit, signed out): keep the new sprint locally
       const localHist = (await Storage.get(SW_KEYS.HISTORY, 'local')) || [];
-      await Storage.set(SW_KEYS.HISTORY, dedupeByStart([...localHist, rec]), 'local');
+      return await Storage.set(SW_KEYS.HISTORY, dedupeByStart([...localHist, rec]), 'local');
+    } catch (e) {
+      console.warn('Saving sprint failed:', e.message);
+      return false;
     }
   },
   async getTodayProgress() {
