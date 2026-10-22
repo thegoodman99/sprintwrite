@@ -379,11 +379,14 @@
       return;
     }
 
-    await Storage.set('sw_history', [], 'sync');
-    await Storage.set('sw_history', [], 'local');
+    const cleared = await Storage.clearHistory();
 
     await refreshHistory();
-    showToast('History cleared successfully!');
+    if (cleared) {
+      showToast('History cleared successfully!');
+    } else {
+      showToast('Could not clear history. Please try again.', 'error');
+    }
   }
 
   async function shareStats() {

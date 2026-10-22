@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync history is now capped by size (newest sprints that fit in ~7 KB) instead of age; older sprints are archived to local storage before sync is written
 - If sync storage is unavailable, new sprints are saved to local storage
 - If a sprint can't be saved at all, the widget now says so instead of treating it as saved; the sprint is kept in memory, retried every minute and before the next save, and the page warns before closing while it's unsaved
-- History writes are serialized so a retry and a new sprint can't overwrite each other
+- History writes (including Clear History) go through the background service worker and run one at a time, so saves from multiple Docs tabs can't overwrite each other
 - Daily goal progress only counts sprints that were actually saved
 - "Last sprint WPM" showed the oldest sprint's WPM (regression in 2.4.2)
 - Options page history listed oldest sprints first (regression in 2.4.2)

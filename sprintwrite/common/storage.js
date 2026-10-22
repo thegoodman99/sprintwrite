@@ -17,10 +17,6 @@ const dedupeByStart = (records) => {
 const sortNewestFirst = (records) =>
   records.sort((a, b) => new Date(b.startISO) - new Date(a.startISO));
 
-// History writes are read-modify-write; run them one at a time so a retry
-// and a new sprint can't overwrite each other
-let historyWriteQueue = Promise.resolve();
-
 const Storage = {
   async get(key, area = 'sync') {
     try {
@@ -73,14 +69,33 @@ const Storage = {
     return sortNewestFirst(dedupeByStart([...sync, ...local]));
   },
   /**
-   * Save a sprint record.
+   * Save a sprint record. History writes are read-modify-write, so every tab
+   * hands them to the background service worker, which runs them one at a time.
    * @returns {Promise<boolean>} true only if the record was persisted
    */
-  appendHistory(rec) {
-    const write = historyWriteQueue.then(() => Storage.writeHistoryRecord(rec));
-    historyWriteQueue = write;
-    return write;
+  async appendHistory(rec) {
+    return Storage.sendHistoryWrite({ action: 'SW_APPEND_HISTORY', record: rec });
   },
+  async clearHistory() {
+    return Storage.sendHistoryWrite({ action: 'SW_CLEAR_HISTORY' });
+  },
+  async sendHistoryWrite(message) {
+    try {
+      const response = await chrome.runtime.sendMessage(message);
+      return response?.ok === true;
+    } catch (e) {
+      // Service worker unreachable or extension reloaded; caller retries
+      console.warn('History write failed:', e.message);
+      return false;
+    }
+  },
+  // Called only by the background service worker (see background/service.js)
+  async clearHistoryNow() {
+    const syncCleared = await Storage.set(SW_KEYS.HISTORY, [], 'sync');
+    const localCleared = await Storage.set(SW_KEYS.HISTORY, [], 'local');
+    return syncCleared && localCleared;
+  },
+  // Called only by the background service worker (see background/service.js)
   async writeHistoryRecord(rec) {
     try {
       const syncHist = (await Storage.get(SW_KEYS.HISTORY, 'sync')) || [];
