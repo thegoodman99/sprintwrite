@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}╔════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║   SprintWrite Build Script v2.4.2     ║${NC}"
+echo -e "${BLUE}║   SprintWrite Build Script v2.4.3     ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -42,7 +42,6 @@ cp -r background "$TEMP_DIR/"
 cp -r common "$TEMP_DIR/"
 cp -r content "$TEMP_DIR/"
 cp -r icons "$TEMP_DIR/"
-cp -r license "$TEMP_DIR/"
 cp -r options "$TEMP_DIR/"
 cp -r popup "$TEMP_DIR/"
 

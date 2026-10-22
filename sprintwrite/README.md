@@ -2,7 +2,7 @@
 
 A completely **FREE** Chrome extension that helps writers stay productive with timed writing sprints, real-time word tracking, and detailed statistics.
 
-![Version](https://img.shields.io/badge/version-2.4.2-blue)
+![Version](https://img.shields.io/badge/version-2.4.3-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## Features
@@ -12,7 +12,7 @@ A completely **FREE** Chrome extension that helps writers stay productive with t
 - 📝 **Real-time Word Tracking** - See current word count, words added during sprint, and WPM
 - 🎯 **Daily Writing Goal** - Set a daily word count target and track your progress
 - 📊 **Sprint Statistics** - Track performance across all your Google Docs
-- 📜 **Global History** - View your last 50 sprints with document names, dates, and stats
+- 📜 **Global History** - Unlimited sprint history with document names, dates, and stats
 - 📥 **Export Data** - Download your complete sprint history as CSV
 
 ### Customization
@@ -28,6 +28,9 @@ A completely **FREE** Chrome extension that helps writers stay productive with t
 - ⚙️ **Minimal Mode** - Smart minimized view with controls during active sprints
 
 ## Installation
+
+### From Chrome Web Store
+[Install SprintWrite from the Chrome Web Store](https://chromewebstore.google.com/detail/sprintwrite-%E2%80%93-writing-spr/gcpkilhgmkcfiibhgfdagelbcgppiafd)
 
 ### From Source (Development)
 
@@ -46,9 +49,6 @@ A completely **FREE** Chrome extension that helps writers stay productive with t
 3. **Start using**
    - Open any Google Doc at `docs.google.com/document`
    - The SprintWrite widget will appear automatically
-
-### From Chrome Web Store (Coming Soon)
-*Extension will be published to the Chrome Web Store soon*
 
 ## Usage
 
@@ -119,8 +119,7 @@ sprintwrite/
 │   ├── index.html         # Options page
 │   ├── options.js         # Options logic
 │   └── styles.css         # Options styling
-├── icons/                 # Extension icons (16, 48, 128)
-└── license/               # License verification (infrastructure only)
+└── icons/                 # Extension icons (16, 48, 128)
 ```
 
 ## Technical Details
@@ -199,7 +198,12 @@ MIT License - feel free to use, modify, and distribute.
 
 ## Changelog
 
-### Version 2.4.2 (Current)
+### Version 2.4.3 (Current)
+- 🐛 **Critical Fix** - Sprints are no longer lost once sync storage fills up
+- 🐛 **Fixes** - Last-sprint WPM and options history order (2.4.2 regressions)
+- 🧹 **Cleanup** - Removed unused license/billing code from the package
+
+### Version 2.4.2
 - 🐛 **Critical Fix** - Fixed missing sprints bug when Chrome storage quota exceeded
 - 💾 **Hybrid Storage** - Unlimited history with automatic archiving
   - Last 30 days sync across devices

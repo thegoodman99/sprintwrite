@@ -221,27 +221,15 @@ SprintWrite needs access to Google Docs pages to inject the sprint timer widget 
 
 ---
 
-## Version Release Notes (for 2.4.0)
+## Version Release Notes (for 2.4.3)
 
 ```
-Version 2.4.0 - Production Release
+Version 2.4.3
 
-New Features:
-• 3-second countdown before sprint starts
-• Enhanced minimal mode with persistent controls
-• Redesigned options page with modern UI
-• High-resolution logos
-
-Improvements:
-• Modular code architecture (better performance)
-• Simplified word count detection
-• Faster sprint startup
-• Removed all debug code
-
-Fixes:
-• Improved minimal mode state management
-• Better goal progress refresh
-• Checkbox spacing in options
+• Fixed: sprints could stop saving for frequent writers once sync storage filled up
+• Fixed: "last sprint" WPM now shows your most recent sprint
+• Fixed: history on the options page lists newest sprints first
+• Removed unused internal code for a smaller, cleaner package
 ```
 
 ---

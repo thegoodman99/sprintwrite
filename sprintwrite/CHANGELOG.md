@@ -5,7 +5,23 @@ All notable changes to SprintWrite will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.4.2] - 2024-12-19
+## [2.4.3] - 2026-10-22
+
+### Fixed
+- **Critical:** Sprints were still silently lost once ~40 sprints accumulated within 30 days. The sync write failed on the 8 KB per-item quota, but the error was swallowed so the local-storage fallback never ran
+- Sync history is now capped by size (newest sprints that fit in ~7 KB) instead of age; older sprints are archived to local storage before sync is written
+- If sync storage is unavailable, new sprints are saved to local storage
+- "Last sprint WPM" showed the oldest sprint's WPM (regression in 2.4.2)
+- Options page history listed oldest sprints first (regression in 2.4.2)
+- Navigation-warning listener was never removed after a sprint ended
+
+### Removed
+- Unused `license/` billing and verification code (was never referenced, but shipped in the package)
+- Leftover license/plan fields in storage, empty storage listener, and `inject.js.backup`
+
+Note: sprints lost under 2.4.2 were never written to storage and can't be recovered.
+
+## [2.4.2] - 2025-12-19
 
 ### Fixed
 - **Critical:** Fixed missing sprints bug when Chrome sync storage quota exceeded (QUOTA_BYTES_PER_ITEM)
@@ -25,7 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - History automatically sorted by date (newest first)
 - Zero user maintenance required
 
-## [2.4.1] - 2024-12-17
+## [2.4.1] - 2025-12-17
 
 ### Added
 - Date range filters for Share Stats (Today/Week/Month/All Time)
@@ -44,7 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Logo blur on high-DPI/Retina displays
 
-## [2.4.0] - 2024-11-22
+## [2.4.0] - 2025-11-22
 
 ### Added
 - 3-second countdown before sprint timer starts (improved UX)
@@ -90,7 +106,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All code now production-ready with no debug logging
 - Improved code organization and maintainability
 
-## [2.3.0] - 2024-11-21
+## [2.3.0] - 2025-11-21
 
 ### Added
 - Document title tracking in sprint history
@@ -112,7 +128,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sprint completion timing issues
 - Theme switching persistence
 
-## [2.2.0] - 2024-11-15
+## [2.2.0] - 2025-11-15
 
 ### Added
 - Cross-device sync via Chrome Sync Storage
@@ -128,7 +144,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Widget positioning on page resize
 - Storage quota management
 
-## [2.1.0] - 2024-11-10
+## [2.1.0] - 2025-11-10
 
 ### Added
 - CSV export functionality for sprint history
@@ -140,7 +156,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved storage architecture
 - Better local/sync storage fallback logic
 
-## [2.0.0] - 2024-11-05
+## [2.0.0] - 2025-11-05
 
 ### Added
 - Custom timer duration input (1-180 minutes)
@@ -156,7 +172,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Legacy Manifest V2 code
 
-## [1.0.0] - 2024-10-28
+## [1.0.0] - 2025-10-28
 
 ### Added
 - Initial release

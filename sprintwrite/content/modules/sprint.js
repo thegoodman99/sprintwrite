@@ -10,13 +10,17 @@ window.SprintWriteSprint = {
    * Confirm before leaving page during active sprint
    */
   confirmUnload(state) {
-    return function(e) {
-      if (state.running && !state.paused) {
-        e.preventDefault();
-        e.returnValue = 'Your sprint is still running. Are you sure you want to leave?';
-        return e.returnValue;
-      }
-    };
+    // Cache the handler so add/removeEventListener receive the same function
+    if (!state.unloadHandler) {
+      state.unloadHandler = function(e) {
+        if (state.running && !state.paused) {
+          e.preventDefault();
+          e.returnValue = 'Your sprint is still running. Are you sure you want to leave?';
+          return e.returnValue;
+        }
+      };
+    }
+    return state.unloadHandler;
   },
 
   /**

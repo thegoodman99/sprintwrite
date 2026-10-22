@@ -1,4 +1,4 @@
-# SprintWrite v2.4.0 - Ready for Chrome Web Store Submission
+# SprintWrite v2.4.2 - Ready for Chrome Web Store Submission
 
 ## Overview
 SprintWrite is production-ready and prepared for Chrome Web Store submission. All code is clean, optimized, and fully tested.
@@ -7,18 +7,18 @@ SprintWrite is production-ready and prepared for Chrome Web Store submission. Al
 
 ## Production Package
 
-**Location**: `/Users/thegoodman99/code/sprintwrite/dist/sprintwrite-v2.4.0-20251124_160810.zip`
+**Location**: `dist/sprintwrite-v2.4.2-<timestamp>.zip` (run `./build.sh` to regenerate)
 
 **Package Details**:
-- **Version**: 2.4.0
+- **Version**: 2.4.2
 - **File Size**: 1.7M
-- **Total Files**: 51
-- **Build Date**: November 24, 2025
+- **Total Files**: 46
+- **Build Date**: October 22, 2026
 - **Status**: ✅ Clean (no backup files, test files, or .DS_Store)
 
 ---
 
-## What's Included in v2.4.0
+## What's Included in v2.4.2
 
 ### Core Features
 - ✅ Timed writing sprints (1-180 minutes)
@@ -84,7 +84,7 @@ https://github.com/thegoodman99/sprintwrite/blob/main/PRIVACY.md
 
 ## Required Screenshots (1280x800px)
 
-You'll need to create 5 screenshots following the updated guide:
+All 5 screenshots are in `screenshots/` (1280x800):
 
 ### 1. Main Widget During Active Sprint
 **Caption**: "Track your writing progress in real-time with live word counts and WPM"
@@ -189,18 +189,18 @@ You'll need to create 5 screenshots following the updated guide:
 ## Submission Checklist
 
 ### Before Upload
-- ✅ Production package built: `sprintwrite-v2.4.0-20251124_160810.zip`
+- ✅ Production package built: `dist/sprintwrite-v2.4.2-<timestamp>.zip`
 - ✅ All documentation complete
 - ✅ Privacy policy published and accessible
-- ⏳ 5 screenshots created (waiting for user)
+- ✅ 5 screenshots created (`screenshots/`, 1280x800)
 - ✅ Store listing text prepared
-- ✅ Version number verified (2.4.0)
+- ✅ Version number verified (2.4.2)
 
 ### Upload Process
 - [ ] Create Chrome Web Store Developer account ($5 one-time fee)
 - [ ] Go to [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole)
 - [ ] Click "New Item"
-- [ ] Upload `sprintwrite-v2.4.0-20251124_160810.zip`
+- [ ] Upload `dist/sprintwrite-v2.4.2-<timestamp>.zip`
 - [ ] Add 5 screenshots with captions
 - [ ] Fill in store listing details from STORE_LISTING.md
 - [ ] Add privacy policy URL
@@ -254,7 +254,7 @@ You'll need to create 5 screenshots following the updated guide:
 
 ## Final Notes
 
-SprintWrite v2.4.0 is **production-ready** and meets all Chrome Web Store requirements:
+SprintWrite v2.4.2 is **production-ready** and meets all Chrome Web Store requirements:
 
 - ✅ Clean, professional codebase
 - ✅ Complete documentation and privacy policy
@@ -264,7 +264,7 @@ SprintWrite v2.4.0 is **production-ready** and meets all Chrome Web Store requir
 - ✅ Minimal permissions
 - ✅ High-quality user experience
 
-**Next Step**: Create the 5 screenshots, then proceed with Chrome Web Store submission!
+**Next Step**: Test the zip in a clean Chrome profile, then proceed with Chrome Web Store submission!
 
 ---
 

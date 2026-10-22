@@ -2,13 +2,13 @@
 
 ## 📋 Required Files & Documentation
 
-- [x] **manifest.json** - Version 2.4.0, all permissions justified
+- [x] **manifest.json** - Version 2.4.2, all permissions justified
 - [x] **README.md** - Updated with current version and features
 - [x] **PRIVACY.md** - Comprehensive privacy policy
 - [x] **CHANGELOG.md** - Complete version history
 - [x] **STORE_LISTING.md** - Store descriptions and marketing materials
 - [x] **build.sh** - Production build script
-- [x] **Production Package** - sprintwrite-v2.4.0.zip
+- [x] **Production Package** - dist/sprintwrite-v2.4.2-*.zip
 
 ## 🎨 Visual Assets
 
@@ -20,11 +20,11 @@
 - [x] 512x512 (logo_512px.png)
 
 ### Store Listing Screenshots (1280x800px)
-- [ ] Screenshot 1: Main widget during active sprint
-- [ ] Screenshot 2: Theme showcase
-- [ ] Screenshot 3: Options & Writing Insights
-- [ ] Screenshot 4: Complete history & statistics
-- [ ] Screenshot 5: Minimal mode
+- [x] Screenshot 1: Main widget during active sprint
+- [x] Screenshot 2: Theme showcase
+- [x] Screenshot 3: Options & Writing Insights
+- [x] Screenshot 4: Complete history & statistics
+- [x] Screenshot 5: Minimal mode
 
 ### Promotional Images
 - [ ] Small promo tile: 440x280 (optional but recommended)
@@ -86,8 +86,7 @@
 - [x] Privacy policy published and linked
 - [x] Permissions minimal and justified:
   - [x] `storage` - Save user preferences and sprint history
-  - [x] `scripting` - Inject widget into Google Docs
-  - [x] Host permissions - Only docs.google.com
+  - [x] Host permissions - Only docs.google.com (content script injects the widget)
 
 ## 📱 Browser Compatibility
 
@@ -122,18 +121,18 @@ Focus on your writing with timed sprints! Track progress, set goals, and build b
 
 ## 🚀 Final Checks Before Upload
 
-1. [ ] Run `./build.sh` to create fresh production package
+1. [x] Run `./build.sh` to create fresh production package
 2. [ ] Test the ZIP package in clean Chrome profile
-3. [ ] Verify all 5 screenshots captured at 1280x800
+3. [x] Verify all 5 screenshots captured at 1280x800
 4. [ ] Review store listing text for typos
-5. [ ] Confirm version number in manifest matches package name (2.4.0)
+5. [x] Confirm version number in manifest matches package name (2.4.2)
 6. [ ] Double-check privacy policy URL is accessible
 7. [ ] Ensure support email/GitHub is monitored
 
 ## 📤 Submission Checklist
 
 - [ ] Chrome Web Store Developer account created ($5 fee)
-- [ ] Upload sprintwrite-v2.4.0.zip
+- [ ] Upload dist/sprintwrite-v2.4.2-*.zip
 - [ ] Add all 5 screenshots with captions
 - [ ] Fill in store listing details
 - [ ] Add privacy policy link
@@ -165,6 +164,6 @@ Chrome Web Store typically reviews extensions within **1-3 business days** for n
 
 ---
 
-**Version**: 2.4.0
-**Last Updated**: November 24, 2024
-**Status**: Ready for submission after screenshots completed
+**Version**: 2.4.2
+**Last Updated**: October 22, 2026
+**Status**: Ready for submission — test the zip in a clean Chrome profile, then upload

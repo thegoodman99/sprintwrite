@@ -304,8 +304,8 @@
   }
 
   function loadMoreHistory() {
-    const reversed = allHistory.slice().reverse();
-    const toShow = reversed.slice(displayedCount, displayedCount + INITIAL_LOAD);
+    // getHistory() is already newest first
+    const toShow = allHistory.slice(displayedCount, displayedCount + INITIAL_LOAD);
 
     toShow.forEach(r => {
       const tr = document.createElement('tr');

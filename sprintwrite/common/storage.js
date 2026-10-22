@@ -1,8 +1,21 @@
 const SW_KEYS = {
   SETTINGS: 'sw_settings',
-  HISTORY: 'sw_history',
-  LICENSE: 'sw_license'
+  HISTORY: 'sw_history'
 };
+
+// chrome.storage.sync allows 8192 bytes per item; leave headroom
+const SYNC_HISTORY_BUDGET = 7000;
+
+const byteLength = (str) => new TextEncoder().encode(str).length;
+
+const dedupeByStart = (records) => {
+  const seen = new Map();
+  records.forEach(r => { if (!seen.has(r.startISO)) seen.set(r.startISO, r); });
+  return [...seen.values()];
+};
+
+const sortNewestFirst = (records) =>
+  records.sort((a, b) => new Date(b.startISO) - new Date(a.startISO));
 
 const Storage = {
   async get(key, area = 'sync') {
@@ -20,16 +33,17 @@ const Storage = {
     try {
       const api = chrome.storage[area] || chrome.storage.sync;
       await api.set({ [key]: value });
+      return true;
     } catch (error) {
-      // Silently fail if extension context is invalid (rare in production)
+      // Quota exceeded, sync disabled, or extension context invalidated
       console.warn('Storage set failed:', error.message);
+      return false;
     }
   },
   async getSettings() {
     const def = {
       theme: 'light', // light | dark | nord | solar | midnight
       sound: true,
-      plan: 'FREE', // FREE | PRO_LIFETIME | PRO_SUB - mirrored from license
       dailyGoal: 0, // Daily word count goal (0 = disabled)
       timerPreset1: 15, // First timer preset in minutes
       timerPreset2: 20, // Second timer preset in minutes
@@ -42,12 +56,6 @@ const Storage = {
   async setSettings(next) {
     await Storage.set(SW_KEYS.SETTINGS, next);
   },
-  async getLicense() {
-    return (await Storage.get(SW_KEYS.LICENSE)) || { status: 'FREE', key: '' };
-  },
-  async setLicense(lic) {
-    await Storage.set(SW_KEYS.LICENSE, lic);
-  },
   async getHistory() {
     // Try sync storage first
     const syncHist = await Storage.get(SW_KEYS.HISTORY, 'sync');
@@ -55,65 +63,39 @@ const Storage = {
     // Also check local storage (fallback when sync quota exceeded)
     const localHist = await Storage.get(SW_KEYS.HISTORY, 'local');
 
-    // Merge both, removing duplicates by startISO
     const sync = Array.isArray(syncHist) ? syncHist : [];
     const local = Array.isArray(localHist) ? localHist : [];
 
-    // Combine and deduplicate
-    const combined = [...sync, ...local];
-    const unique = combined.filter((item, index, self) =>
-      index === self.findIndex(t => t.startISO === item.startISO)
-    );
-
-    // Sort by date (newest first)
-    return unique.sort((a, b) => new Date(b.startISO) - new Date(a.startISO));
+    return sortNewestFirst(dedupeByStart([...sync, ...local]));
   },
   async appendHistory(rec) {
-    try {
-      // Get current sync history
-      const syncHist = (await Storage.get(SW_KEYS.HISTORY, 'sync')) || [];
-      syncHist.push(rec);
+    const syncHist = (await Storage.get(SW_KEYS.HISTORY, 'sync')) || [];
+    const all = sortNewestFirst(dedupeByStart([...syncHist, rec]));
 
-      // Determine cutoff date (30 days ago)
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - 30);
+    // Keep the newest sprints that fit in one sync item (cross-device);
+    // everything older is archived to local storage (unlimited capacity)
+    const recent = [];
+    let bytes = SW_KEYS.HISTORY.length + 2;
+    for (const sprint of all) {
+      bytes += byteLength(JSON.stringify(sprint)) + 1;
+      if (bytes > SYNC_HISTORY_BUDGET) break;
+      recent.push(sprint);
+    }
+    const toArchive = all.slice(recent.length);
 
-      // Split into recent (last 30 days) and old (archive)
-      const recent = [];
-      const toArchive = [];
-
-      syncHist.forEach(sprint => {
-        const sprintDate = new Date(sprint.startISO);
-        if (sprintDate >= cutoffDate) {
-          recent.push(sprint);
-        } else {
-          toArchive.push(sprint);
-        }
-      });
-
-      // Save recent sprints to sync storage (cross-device)
-      await Storage.set(SW_KEYS.HISTORY, recent, 'sync');
-
-      // Move old sprints to local storage (archive)
-      if (toArchive.length > 0) {
-        const localHist = (await Storage.get(SW_KEYS.HISTORY, 'local')) || [];
-        const combined = [...localHist, ...toArchive];
-
-        // Deduplicate by startISO
-        const unique = combined.filter((item, index, self) =>
-          index === self.findIndex(t => t.startISO === item.startISO)
-        );
-
-        await Storage.set(SW_KEYS.HISTORY, unique, 'local');
-      }
-
-    } catch (e) {
-      console.warn('Storage error, falling back to local:', e.message);
-
-      // Fallback: save directly to local storage if sync fails
+    // Archive first so a failed sync write can never drop a sprint
+    if (toArchive.length > 0) {
       const localHist = (await Storage.get(SW_KEYS.HISTORY, 'local')) || [];
-      localHist.push(rec);
-      await Storage.set(SW_KEYS.HISTORY, localHist, 'local');
+      const archived = await Storage.set(SW_KEYS.HISTORY, dedupeByStart([...localHist, ...toArchive]), 'local');
+      // Couldn't archive: leave sync untouched rather than drop older sprints
+      if (!archived) return;
+    }
+
+    const synced = await Storage.set(SW_KEYS.HISTORY, recent, 'sync');
+    if (!synced) {
+      // Sync unavailable (quota, rate limit, signed out): keep the new sprint locally
+      const localHist = (await Storage.get(SW_KEYS.HISTORY, 'local')) || [];
+      await Storage.set(SW_KEYS.HISTORY, dedupeByStart([...localHist, rec]), 'local');
     }
   },
   async getTodayProgress() {

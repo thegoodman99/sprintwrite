@@ -16,7 +16,7 @@ window.SprintWriteState = {
 
     // Get last sprint WPM from history
     const history = await Storage.getHistory();
-    const lastSprint = history.length > 0 ? history[history.length - 1] : null;
+    const lastSprint = history.length > 0 ? history[0] : null; // getHistory() is newest first
     const lastWPM = lastSprint ? lastSprint.wpm : 0;
 
     return {

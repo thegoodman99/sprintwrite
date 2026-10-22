@@ -63,11 +63,6 @@
     }
   }, 2000);
 
-  // Listen for settings changes from options page
-  chrome.storage.onChanged.addListener(async (changes, areaName) => {
-    // Settings changed
-  });
-
   // Listen for messages from options page
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'REFRESH_WIDGET') {
